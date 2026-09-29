@@ -1,3 +1,4 @@
+import { BackToHome } from "@/components/BackToHome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -78,7 +79,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="mx-auto flex w-full max-w-6xl items-center px-6 py-6">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex size-8 items-center justify-center rounded-sm border border-foreground/25 bg-card">
             <span className="font-display text-sm font-semibold">U</span>
@@ -87,6 +88,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             User Manager Pro
           </span>
         </Link>
+        <BackToHome />
       </header>
 
       <main className="flex flex-1 items-start justify-center px-6 pb-24 pt-16">
