@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { useI18n } from "@/i18n";
 
 const fadeUp = {
   initial: { opacity: 0, y: 16 },
@@ -20,13 +22,14 @@ function SectionDivider() {
 
 export default function Landing() {
   const { isLoading, isAuthenticated } = useAuth();
+  const { t } = useI18n();
 
   const primaryHref = isAuthenticated ? "/dashboard" : "/auth";
   const primaryLabel = isAuthenticated
-    ? "Abrir mi espacio"
+    ? t("Abrir mi espacio")
     : isLoading
-      ? "Cargando…"
-      : "Iniciar sesión";
+      ? t("Cargando…")
+      : t("Iniciar sesión");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -40,13 +43,14 @@ export default function Landing() {
             Doc Manager
           </span>
         </div>
-        <nav className="font-ui text-sm text-muted-foreground">
+        <nav className="font-ui flex items-center gap-4 text-sm text-muted-foreground">
           <Link
             to={primaryHref}
             className="transition-colors hover:text-foreground"
           >
-            {isAuthenticated ? "Mi espacio" : "Iniciar sesión"}
+            {t(isAuthenticated ? "Mi espacio" : "Iniciar sesión")}
           </Link>
+          <LanguagePicker />
         </nav>
       </header>
 
@@ -57,16 +61,16 @@ export default function Landing() {
           transition={{ duration: 0.5 }}
           className="kicker"
         >
-          Gestión de usuarios · Documentación técnica · Seguridad química
+          {t("Gestión de usuarios · Documentación técnica · Seguridad química")}
         </motion.p>
         <motion.h1
           {...fadeUp}
           transition={{ duration: 0.6, delay: 0.05 }}
           className="mt-6 max-w-3xl text-4xl leading-[1.1] font-semibold sm:text-6xl"
         >
-          Cada centro, con su documentación.
+          {t("Cada centro, con su documentación.")}
           <span className="block text-muted-foreground">
-            Nada más, nada menos.
+            {t("Nada más, nada menos.")}
           </span>
         </motion.h1>
         <motion.p
@@ -74,10 +78,9 @@ export default function Landing() {
           transition={{ duration: 0.6, delay: 0.12 }}
           className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground"
         >
-          Doc Manager organiza fichas técnicas, fichas de seguridad,
-          manuales e instrucciones de trabajo por centro de trabajo. Los
-          administradores gestionan personas y permisos; cada usuario consulta
-          exactamente la documentación de su centro.
+          {t(
+            "Doc Manager organiza fichas técnicas, fichas de seguridad, manuales e instrucciones de trabajo por centro de trabajo. Los administradores gestionan personas y permisos; cada usuario consulta exactamente la documentación de su centro.",
+          )}
         </motion.p>
         <motion.div
           {...fadeUp}
@@ -92,7 +95,7 @@ export default function Landing() {
             <ArrowRight className="size-4" />
           </Link>
           <p className="font-ui text-xs text-muted-foreground">
-            Acceso con código por correo · Sin contraseñas
+            {t("Acceso con código por correo · Sin contraseñas")}
           </p>
         </motion.div>
 

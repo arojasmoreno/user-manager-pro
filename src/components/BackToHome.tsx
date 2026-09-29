@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { ArrowLeft } from "lucide-react";
+import { useI18n } from "@/i18n";
 import { cn } from "@/lib/utils";
 
 /**
@@ -15,11 +16,12 @@ export function BackToHome({
   size?: "button" | "block";
   className?: string;
 }) {
+  const { t } = useI18n();
   return (
     <Link
       to="/"
-      aria-label="Volver al inicio"
-      title="Volver al inicio"
+      aria-label={t("Volver al inicio")}
+      title={t("Volver al inicio")}
       className={cn(
         "font-ui inline-flex items-center gap-2 rounded-sm transition-colors",
         size === "button"
@@ -30,7 +32,7 @@ export function BackToHome({
     >
       <ArrowLeft className="size-3.5" />
       <span className={size === "button" ? "hidden sm:inline" : undefined}>
-        Volver al inicio
+        {t("Volver al inicio")}
       </span>
     </Link>
   );

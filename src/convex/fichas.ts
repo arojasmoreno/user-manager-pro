@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { ROLES } from "./schema";
 import { requireAdmin, requireUser } from "./access";
 
@@ -67,6 +67,36 @@ export const listAll = query({
     await requireAdmin(ctx);
     const all = await ctx.db.query("fichas").collect();
     return all.sort((a, b) => a.title.localeCompare(b.title));
+  },
+});
+
+/**
+ * Raw ficha for server-side use (e.g. the AI translation action). Not callable
+ * from the browser: it skips the per-user visibility check on purpose, so the
+ * action that uses it must enforce its own permissions first.
+ */
+export const getForTranslation = internalQuery({
+  args: { fichaId: v.id("fichas") },
+  returns: v.union(
+    v.object({
+      _id: v.id("fichas"),
+      title: v.string(),
+      kind: fichaKindValidator,
+      productName: v.optional(v.string()),
+      manufacturer: v.optional(v.string()),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const ficha = await ctx.db.get(args.fichaId);
+    if (ficha === null) return null;
+    return {
+      _id: ficha._id,
+      title: ficha.title,
+      kind: ficha.kind,
+      productName: ficha.productName,
+      manufacturer: ficha.manufacturer,
+    };
   },
 });
 

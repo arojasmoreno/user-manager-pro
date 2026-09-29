@@ -1,6 +1,7 @@
 import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { Infer, v } from "convex/values";
+import { LOCALE_CODES } from "../i18n/locales";
 
 // default user roles. can add / remove based on the project as needed
 export const ROLES = {
@@ -15,6 +16,12 @@ export const roleValidator = v.union(
   v.literal(ROLES.MEMBER),
 );
 export type Role = Infer<typeof roleValidator>;
+
+/** Locales a ficha can be translated into. */
+export const localeValidator = v.union(
+  ...LOCALE_CODES.map((code) => v.literal(code)),
+);
+export type LocaleCode = Infer<typeof localeValidator>;
 
 const schema = defineSchema(
   {
@@ -73,6 +80,20 @@ const schema = defineSchema(
         v.literal("revoked"),
       ),
     }).index("email", ["email"]),
+
+    // One translated version of a ficha's own fields. Created either by the
+    // admin by hand or by the AI translation action; one row per ficha+locale.
+    fichaTranslations: defineTable({
+      fichaId: v.id("fichas"),
+      locale: localeValidator,
+      title: v.string(),
+      productName: v.optional(v.string()),
+      manufacturer: v.optional(v.string()),
+      source: v.union(v.literal("ai"), v.literal("manual")),
+      _creationTime: v.number(),
+    })
+      .index("byFicha", ["fichaId"])
+      .index("byFichaLocale", ["fichaId", "locale"]),
 
     // One-shot app metadata (e.g. bootstrap admin promo marker)
     appMeta: defineTable({

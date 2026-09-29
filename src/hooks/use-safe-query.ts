@@ -8,7 +8,8 @@ import type { FunctionReference } from "convex/server";
  */
 export function useSafeQuery<Query extends FunctionReference<"query">>(
   query: Query,
-  args: Record<string, never> | "skip" = {},
+  // `skip` disables the subscription; otherwise the query's own args.
+  args: Record<string, unknown> | "skip" = {},
 ): {
   data: Query["_returnType"] | undefined;
   error: Error | null;

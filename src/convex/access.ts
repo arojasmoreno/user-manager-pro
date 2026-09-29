@@ -1,6 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import { ROLES, roleValidator } from "./schema";
 
@@ -43,6 +43,20 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
 // ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
+
+/**
+ * Same check as `requireAdmin`, reachable from an action: actions get an
+ * `ActionCtx` with no direct database access, so the identity has to be
+ * verified by running a query.
+ */
+export const requireAdminInternal = internalQuery({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    return null;
+  },
+});
 
 export const userById = query({
   args: { userId: v.id("users") },
