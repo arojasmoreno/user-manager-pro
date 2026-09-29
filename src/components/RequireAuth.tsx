@@ -1,3 +1,4 @@
+import { BackToHome } from "@/components/BackToHome";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2, Lock } from "lucide-react";
@@ -65,13 +66,7 @@ export function RequireAuth({
             >
               Iniciar sesión
             </Button>
-            <Button
-              variant="ghost"
-              className="font-ui h-10 rounded-sm"
-              onClick={() => navigate("/")}
-            >
-              Volver al inicio
-            </Button>
+            <BackToHome size="block" className="mt-0" />
           </div>
         </div>
       </main>

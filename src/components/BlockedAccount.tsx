@@ -1,3 +1,4 @@
+import { BackToHome } from "@/components/BackToHome";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { Ban } from "lucide-react";
@@ -30,6 +31,7 @@ export function BlockedAccount() {
         >
           Cerrar sesión
         </Button>
+        <BackToHome size="block" className="mt-2" />
       </div>
     </main>
   );

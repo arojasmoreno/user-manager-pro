@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BackToHome } from "@/components/BackToHome";
 import { useAuth } from "@/hooks/use-auth";
 import { ROLES } from "@/lib/roles";
 import { LogOut } from "lucide-react";
@@ -50,7 +51,8 @@ export function WorkspaceShell({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <BackToHome />
             <Badge
               variant="outline"
               className="font-ui rounded-sm border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
