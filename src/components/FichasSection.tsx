@@ -50,8 +50,8 @@ type FichaKind = FichaDoc["kind"];
 const KIND_LABELS: Record<FichaKind, string> = {
   ficha_tecnica: "Ficha técnica",
   ficha_seguridad: "Ficha de seguridad",
-  manual_instrucciones: "Manual de instrucciones",
-  instrucciones_trabajo: "Instrucciones de trabajo",
+  manual_instrucciones: "Manual de máquina",
+  instrucciones_trabajo: "Instrucción de trabajo",
 };
 
 const KIND_ICONS: Record<FichaKind, typeof FileText> = {
@@ -217,9 +217,9 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
   };
 
   const submit = async () => {
-    if (!title.trim() || !productName.trim() || !url.trim() || centerIds.length === 0) {
+    if (!title.trim() || !url.trim() || centerIds.length === 0) {
       toast.error(
-        "Completa título, producto, documento y al menos un centro de trabajo.",
+        "Completa el nombre, el documento y al menos un centro de trabajo.",
       );
       return;
     }
@@ -228,7 +228,7 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
       await create({
         title: title.trim(),
         kind,
-        productName: productName.trim(),
+        productName: productName.trim() || undefined,
         manufacturer: manufacturer.trim() || undefined,
         url: url.trim(),
         workCenterIds: centerIds as any,
@@ -263,28 +263,7 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
         <div className="grid max-h-[65vh] gap-4 overflow-y-auto py-2 pr-1">
           <div className="grid gap-2">
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
-              Tipo de documento
-            </Label>
-            <Select value={kind} onValueChange={(v) => setKind(v as FichaKind)}>
-              <SelectTrigger className="rounded-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-sm bg-card">
-                <SelectItem value="ficha_tecnica">Ficha técnica</SelectItem>
-                <SelectItem value="ficha_seguridad">Ficha de seguridad</SelectItem>
-                <SelectItem value="manual_instrucciones">
-                  Manual de instrucciones
-                </SelectItem>
-                <SelectItem value="instrucciones_trabajo">
-                  Instrucciones de trabajo
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid gap-2">
-            <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
-              Título
+              Nombre de la ficha
             </Label>
             <Input
               className="rounded-sm"
@@ -294,42 +273,68 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
-                Producto
-              </Label>
-              <Input
-                className="rounded-sm"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder="Nombre del producto"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
-                Fabricante
-              </Label>
-              <Input
-                className="rounded-sm"
-                value={manufacturer}
-                onChange={(e) => setManufacturer(e.target.value)}
-                placeholder="Opcional"
-              />
-            </div>
+          <div className="grid gap-2">
+            <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
+              Tipo de ficha
+            </Label>
+            <Select value={kind} onValueChange={(v) => setKind(v as FichaKind)}>
+              <SelectTrigger className="rounded-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-sm bg-card">
+                <SelectItem value="ficha_tecnica">Ficha técnica</SelectItem>
+                <SelectItem value="ficha_seguridad">
+                  Ficha de seguridad
+                </SelectItem>
+                <SelectItem value="manual_instrucciones">
+                  Manual de máquina
+                </SelectItem>
+                <SelectItem value="instrucciones_trabajo">
+                  Instrucción de trabajo
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-
-          <DocumentSource url={url} onUrlChange={setUrl} />
 
           <div className="grid gap-2">
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
-              Centros de trabajo
+              Centro al que pertenece
             </Label>
             <CenterPicker
               centers={centers}
               selected={centerIds}
               onToggle={toggleCenter}
             />
+            <p className="font-ui text-[11px] leading-relaxed text-muted-foreground">
+              Cada persona verá esta ficha si su centro está marcado aquí.
+            </p>
+          </div>
+
+          <DocumentSource url={url} onUrlChange={setUrl} />
+
+          <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
+                Producto o equipo (opcional)
+              </Label>
+              <Input
+                className="rounded-sm"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder="Tornillo de bancada 400 V"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
+                Fabricante (opcional)
+              </Label>
+              <Input
+                className="rounded-sm"
+                value={manufacturer}
+                onChange={(e) => setManufacturer(e.target.value)}
+                placeholder="Nombre del fabricante"
+              />
+            </div>
           </div>
         </div>
 
@@ -365,7 +370,7 @@ function EditFichaDialog({
   const update = useMutation(api.fichas.update);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(ficha.title);
-  const [productName, setProductName] = useState(ficha.productName);
+  const [productName, setProductName] = useState(ficha.productName ?? "");
   const [manufacturer, setManufacturer] = useState(ficha.manufacturer ?? "");
   const [url, setUrl] = useState(ficha.url);
   const [centerIds, setCenterIds] = useState<string[]>(ficha.workCenterIds);
@@ -374,7 +379,7 @@ function EditFichaDialog({
   useEffect(() => {
     if (open) {
       setTitle(ficha.title);
-      setProductName(ficha.productName);
+      setProductName(ficha.productName ?? "");
       setManufacturer(ficha.manufacturer ?? "");
       setUrl(ficha.url);
       setCenterIds(ficha.workCenterIds);
@@ -393,7 +398,7 @@ function EditFichaDialog({
       await update({
         fichaId: ficha._id,
         title: title.trim(),
-        productName: productName.trim(),
+        productName: productName.trim() || undefined,
         manufacturer: manufacturer.trim() || undefined,
         url: url.trim(),
         workCenterIds: centerIds as any,
@@ -556,7 +561,7 @@ export function FichasSection() {
     const q = search.trim().toLowerCase();
     return (
       f.title.toLowerCase().includes(q) ||
-      f.productName.toLowerCase().includes(q) ||
+      (f.productName ?? "").toLowerCase().includes(q) ||
       (f.manufacturer ?? "").toLowerCase().includes(q)
     );
   });
@@ -691,10 +696,12 @@ export function FichasSection() {
                 <h3 className="font-display mt-4 text-lg leading-snug font-semibold">
                   {f.title}
                 </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {f.productName}
-                  {f.manufacturer ? ` · ${f.manufacturer}` : ""}
-                </p>
+                {(f.productName || f.manufacturer) && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {f.productName}
+                    {f.manufacturer ? ` · ${f.manufacturer}` : ""}
+                  </p>
+                )}
 
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {centerNames(f.workCenterIds).map((name) => (

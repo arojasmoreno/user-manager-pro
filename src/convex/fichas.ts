@@ -25,7 +25,7 @@ export const listMine = query({
       _id: v.id("fichas"),
       title: v.string(),
       kind: fichaKindValidator,
-      productName: v.string(),
+      productName: v.optional(v.string()),
       manufacturer: v.optional(v.string()),
       url: v.string(),
       workCenterIds: v.array(v.id("workCenters")),
@@ -55,7 +55,7 @@ export const listAll = query({
       _id: v.id("fichas"),
       title: v.string(),
       kind: fichaKindValidator,
-      productName: v.string(),
+      productName: v.optional(v.string()),
       manufacturer: v.optional(v.string()),
       url: v.string(),
       workCenterIds: v.array(v.id("workCenters")),
@@ -77,7 +77,7 @@ export const getById = query({
       _id: v.id("fichas"),
       title: v.string(),
       kind: fichaKindValidator,
-      productName: v.string(),
+      productName: v.optional(v.string()),
       manufacturer: v.optional(v.string()),
       url: v.string(),
       workCenterIds: v.array(v.id("workCenters")),
@@ -116,7 +116,7 @@ export const create = mutation({
   args: {
     title: v.string(),
     kind: fichaKindValidator,
-    productName: v.string(),
+    productName: v.optional(v.string()),
     manufacturer: v.optional(v.string()),
     url: v.string(),
     workCenterIds: v.array(v.id("workCenters")),
@@ -131,8 +131,12 @@ export const create = mutation({
     return await ctx.db.insert("fichas", {
       title: args.title.trim(),
       kind: args.kind,
-      productName: args.productName.trim(),
-      manufacturer: args.manufacturer?.trim() || undefined,
+      ...(args.productName?.trim()
+        ? { productName: args.productName.trim() }
+        : null),
+      ...(args.manufacturer?.trim()
+        ? { manufacturer: args.manufacturer.trim() }
+        : null),
       url,
       workCenterIds: args.workCenterIds,
       active: args.workCenterIds.length > 0,
@@ -160,7 +164,9 @@ export const update = mutation({
     const patch: Record<string, unknown> = {};
     if (args.title !== undefined) patch.title = args.title.trim();
     if (args.kind !== undefined) patch.kind = args.kind;
-    if (args.productName !== undefined) patch.productName = args.productName.trim();
+    if (args.productName !== undefined) {
+      patch.productName = args.productName.trim() || undefined;
+    }
     if (args.manufacturer !== undefined) {
       patch.manufacturer = args.manufacturer.trim() || undefined;
     }
