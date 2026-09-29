@@ -43,8 +43,8 @@ const schema = defineSchema(
     }).index("code", ["code"]),
 
     // Catalog items: fichas técnicas, fichas de seguridad, manuales de
-    // instrucciones e instrucciones de trabajo. Each belongs to one or more
-    // work centers and points at a document (URL or Supabase storage path).
+    // máquina e instrucciones de trabajo. Each belongs to one or more work
+    // centers and points at a document (URL or Supabase storage path).
     fichas: defineTable({
       title: v.string(),
       kind: v.union(
@@ -53,7 +53,8 @@ const schema = defineSchema(
         v.literal("manual_instrucciones"),
         v.literal("instrucciones_trabajo"),
       ),
-      productName: v.string(),
+      /** Product or equipment the sheet refers to (optional). */
+      productName: v.optional(v.string()),
       manufacturer: v.optional(v.string()),
       url: v.string(),
       workCenterIds: v.array(v.id("workCenters")),
