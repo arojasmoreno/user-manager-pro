@@ -58,6 +58,23 @@ export const requireAdminInternal = internalQuery({
   },
 });
 
+/**
+ * The signed-in user's id, name and email, reachable from an action. Actions
+ * cannot read the database directly, so this re-runs the same session check.
+ */
+export const requireUserInternal = internalQuery({
+  args: {},
+  returns: v.object({
+    _id: v.id("users"),
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+  }),
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
+    return { _id: user._id, name: user.name, email: user.email };
+  },
+});
+
 export const userById = query({
   args: { userId: v.id("users") },
   returns: v.union(

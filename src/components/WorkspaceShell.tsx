@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BackToHome } from "@/components/BackToHome";
 import { LanguagePicker } from "@/components/LanguagePicker";
+import { SupportDialog } from "@/components/SupportDialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useI18n } from "@/i18n";
 import { ROLES } from "@/lib/roles";
@@ -61,6 +62,7 @@ export function WorkspaceShell({
           <div className="flex items-center gap-2">
             <BackToHome />
             <LanguagePicker />
+            <SupportDialog />
             <Badge
               variant="outline"
               className="font-ui rounded-sm border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
