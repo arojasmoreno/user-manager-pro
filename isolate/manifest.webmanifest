@@ -1,0 +1,17 @@
+{
+  "name": "Doc Manager — Documentación por centro de trabajo",
+  "short_name": "Doc Manager",
+  "description": "Gestión de usuarios, centros de trabajo y fichas técnicas, de seguridad, manuales e instrucciones de trabajo.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
