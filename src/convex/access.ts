@@ -65,7 +65,9 @@ export const userById = query({
       name: doc.name,
       email: doc.email,
       image: doc.image,
-      role: doc.role,
+      // Accounts created before roles were enforced may still have no role
+      // stored; they behave as plain users everywhere else.
+      role: doc.role ?? ROLES.USER,
       workCenterIds: doc.workCenterIds ?? [],
     };
   },
@@ -91,7 +93,7 @@ export const listUsers = query({
       _id: u._id,
       name: u.name,
       email: u.email,
-      role: u.role,
+      role: u.role ?? ROLES.USER,
       workCenterIds: u.workCenterIds ?? [],
       blocked: u.blocked,
       _creationTime: u._creationTime,
@@ -148,6 +150,11 @@ export const listMyCenters = query({
 // Mutations — users
 // ---------------------------------------------------------------------------
 
+/**
+ * Edit a user. Administrator only (`requireAdmin`): nobody — including the
+ * account being edited — can change a role on their own. A user always keeps
+ * whatever role the last administrator gave them.
+ */
 export const updateUser = mutation({
   args: {
     userId: v.id("users"),
@@ -390,7 +397,9 @@ export const revokeInvite = mutation({
 });
 
 // ---------------------------------------------------------------------------
-// Bootstrap: the first account to sign in becomes the first admin.
+// Bootstrap safety valve: the very first account of an installation with no
+// administrator at all can claim the admin role, so a fresh deployment is never
+// locked out. As soon as one admin exists, roles are only changed by an admin.
 // Guarded by a one-shot marker in appMeta.
 // ---------------------------------------------------------------------------
 
@@ -401,7 +410,14 @@ export const consumeBootstrapPromo = mutation({
     const userId = await getAuthUserId(ctx);
     if (userId === null) return false;
     const user = await ctx.db.get(userId);
-    if (user === null || user.role === ROLES.ADMIN) return false;
+    if (user === null || user.blocked === true) return false;
+    if (user.role === ROLES.ADMIN) return false;
+
+    const existingAdmin = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("role"), ROLES.ADMIN))
+      .first();
+    if (existingAdmin !== null) return false;
 
     const meta = await ctx.db.query("appMeta").first();
     if (meta !== null && meta.bootstrapPromoUsed) return false;
