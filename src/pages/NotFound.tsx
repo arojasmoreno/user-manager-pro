@@ -14,10 +14,10 @@ export default function NotFound() {
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex size-8 items-center justify-center rounded-sm border border-foreground/25 bg-card">
-            <span className="font-display text-sm font-semibold">U</span>
+            <span className="font-display text-sm font-semibold">D</span>
           </div>
           <span className="font-ui text-sm font-medium tracking-wide">
-            User Manager Pro
+            Doc Manager
           </span>
         </Link>
         <BackToHome />

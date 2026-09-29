@@ -63,7 +63,7 @@ function BootstrapPromoDialog() {
           </DialogTitle>
           <DialogDescription>
             Esta es la primera cuenta en entrar. Puedes convertirla en la
-            cuenta administradora principal de User Manager Pro.
+            cuenta administradora principal de Doc Manager.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
