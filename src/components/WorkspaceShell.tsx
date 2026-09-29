@@ -7,7 +7,7 @@ import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
 
-export type WorkspaceTab = "fichas" | "centros" | "usuarios";
+export type WorkspaceTab = "fichas" | "asistente" | "centros" | "usuarios";
 
 export function WorkspaceShell({
   tab,
@@ -30,6 +30,7 @@ export function WorkspaceShell({
 
   const tabs: { id: WorkspaceTab; label: string; adminOnly?: boolean }[] = [
     { id: "fichas", label: "Fichas" },
+    { id: "asistente", label: "Asistente" },
     { id: "centros", label: "Centros", adminOnly: true },
     { id: "usuarios", label: "Usuarios", adminOnly: true },
   ];
