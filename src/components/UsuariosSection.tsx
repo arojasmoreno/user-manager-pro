@@ -1,5 +1,5 @@
 import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { ErrorState } from "@/components/ErrorState";
 import { useSafeQuery } from "@/hooks/use-safe-query";
 import { ROLES } from "@/lib/roles";
@@ -35,11 +35,11 @@ import {
   UserRoundPlus,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type UserRow = Doc<"users"> & { workCenterIds?: string[]; blocked?: boolean };
+type UserRow = Doc<"users"> & { blocked?: boolean };
 type CenterDoc = Doc<"workCenters">;
 
 // ---------------------------------------------------------------------------
@@ -52,10 +52,10 @@ function InviteDialog({ centers }: { centers: CenterDoc[] }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "user">("user");
-  const [centerIds, setCenterIds] = useState<string[]>([]);
+  const [centerIds, setCenterIds] = useState<Id<"workCenters">[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const toggleCenter = (id: string) => {
+  const toggleCenter = (id: Id<"workCenters">) => {
     setCenterIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
@@ -72,7 +72,7 @@ function InviteDialog({ centers }: { centers: CenterDoc[] }) {
         email: email.trim().toLowerCase(),
         name: name.trim() || undefined,
         role,
-        centerIds: centerIds as any,
+        centerIds: centerIds,
       });
       toast.success(
         role === "admin"
@@ -214,20 +214,21 @@ function EditUserDialog({
   const [role, setRole] = useState<"admin" | "user">(
     target.role === ROLES.ADMIN ? "admin" : "user",
   );
-  const [centerIds, setCenterIds] = useState<string[]>(
-    (target.workCenterIds ?? []) as string[],
+  const [centerIds, setCenterIds] = useState<Id<"workCenters">[]>(
+    target.workCenterIds ?? [],
   );
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setName(target.name ?? "");
-      setRole(target.role === ROLES.ADMIN ? "admin" : "user");
-      setCenterIds((target.workCenterIds ?? []) as string[]);
-    }
-  }, [open, target]);
+  // Seed the form from the user record when the dialog opens instead of
+  // syncing it with an effect.
+  const openWithFreshValues = () => {
+    setName(target.name ?? "");
+    setRole(target.role === ROLES.ADMIN ? "admin" : "user");
+    setCenterIds(target.workCenterIds ?? []);
+    setOpen(true);
+  };
 
-  const toggleCenter = (id: string) => {
+  const toggleCenter = (id: Id<"workCenters">) => {
     setCenterIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
@@ -239,11 +240,11 @@ function EditUserDialog({
       await updateUser({
         userId: target._id,
         name: name.trim() || undefined,
-        role: role as any,
+        role,
       });
       await setUserCenters({
         userId: target._id,
-        centerIds: centerIds as any,
+        centerIds: centerIds,
       });
       toast.success("Usuario actualizado.");
       setOpen(false);
@@ -262,6 +263,7 @@ function EditUserDialog({
         <Button
           variant="ghost"
           size="sm"
+          onClick={openWithFreshValues}
           className="font-ui h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           Gestionar
@@ -453,9 +455,9 @@ export function UsuariosSection() {
 
   const pending = (invites.data ?? []).filter((i) => i.status === "pending");
 
-  const handleRevoke = async (inviteId: string) => {
+  const handleRevoke = async (inviteId: Id<"invites">) => {
     try {
-      await revokeInvite({ inviteId: inviteId as any });
+      await revokeInvite({ inviteId });
       toast.success("Invitación revocada.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al revocar.");

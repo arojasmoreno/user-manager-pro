@@ -86,14 +86,18 @@ function Carousel({
     [scrollPrev, scrollNext]
   )
 
-  React.useEffect(() => {
-    if (!api || !setApi) return
-    setApi(api)
-  }, [api, setApi])
+  // Publish the api instance to the parent while rendering (React's
+  // "adjust state when props change" pattern) instead of in an effect.
+  const [publishedApi, setPublishedApi] = React.useState<CarouselApi | null>(null)
+  if (api && api !== publishedApi) {
+    setPublishedApi(api)
+    setApi?.(api)
+    onSelect(api)
+  }
 
+  // Subscribe to embla events (the initial sync happens during render above).
   React.useEffect(() => {
     if (!api) return
-    onSelect(api)
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 

@@ -1,5 +1,5 @@
 import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { ErrorState } from "@/components/ErrorState";
 import { useAuth } from "@/hooks/use-auth";
 import { useSafeQuery } from "@/hooks/use-safe-query";
@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import {
   BookOpen,
   ExternalLink,
@@ -39,7 +39,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -81,7 +81,7 @@ function DocumentSource({
     }
     setUploading(true);
     try {
-      const path = `${Date.now()}-${file.name.replace(/[^\w.\-]+/g, "_")}`;
+      const path = `${Date.now()}-${file.name.replace(/[^\w.-]+/g, "_")}`;
       const { error } = await supabase.storage
         .from(FICHAS_BUCKET)
         .upload(path, file);
@@ -159,8 +159,8 @@ function CenterPicker({
   onToggle,
 }: {
   centers: CenterDoc[];
-  selected: string[];
-  onToggle: (id: string) => void;
+  selected: Id<"workCenters">[];
+  onToggle: (id: Id<"workCenters">) => void;
 }) {
   if (centers.length === 0) {
     return (
@@ -198,10 +198,10 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
   const [productName, setProductName] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [url, setUrl] = useState("");
-  const [centerIds, setCenterIds] = useState<string[]>([]);
+  const [centerIds, setCenterIds] = useState<Id<"workCenters">[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const toggleCenter = (id: string) => {
+  const toggleCenter = (id: Id<"workCenters">) => {
     setCenterIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
@@ -231,7 +231,7 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
         productName: productName.trim() || undefined,
         manufacturer: manufacturer.trim() || undefined,
         url: url.trim(),
-        workCenterIds: centerIds as any,
+        workCenterIds: centerIds,
       });
       toast.success("Ficha añadida al catálogo.");
       reset();
@@ -373,20 +373,23 @@ function EditFichaDialog({
   const [productName, setProductName] = useState(ficha.productName ?? "");
   const [manufacturer, setManufacturer] = useState(ficha.manufacturer ?? "");
   const [url, setUrl] = useState(ficha.url);
-  const [centerIds, setCenterIds] = useState<string[]>(ficha.workCenterIds);
+  const [centerIds, setCenterIds] = useState<Id<"workCenters">[]>(
+    ficha.workCenterIds,
+  );
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    if (open) {
-      setTitle(ficha.title);
-      setProductName(ficha.productName ?? "");
-      setManufacturer(ficha.manufacturer ?? "");
-      setUrl(ficha.url);
-      setCenterIds(ficha.workCenterIds);
-    }
-  }, [open, ficha]);
+  // Seed the form from the ficha when the dialog opens, so the fields always
+  // reflect the latest saved values without an effect.
+  const openWithFreshValues = () => {
+    setTitle(ficha.title);
+    setProductName(ficha.productName ?? "");
+    setManufacturer(ficha.manufacturer ?? "");
+    setUrl(ficha.url);
+    setCenterIds(ficha.workCenterIds);
+    setOpen(true);
+  };
 
-  const toggleCenter = (id: string) => {
+  const toggleCenter = (id: Id<"workCenters">) => {
     setCenterIds((prev) =>
       prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
@@ -401,7 +404,7 @@ function EditFichaDialog({
         productName: productName.trim() || undefined,
         manufacturer: manufacturer.trim() || undefined,
         url: url.trim(),
-        workCenterIds: centerIds as any,
+        workCenterIds: centerIds,
       });
       toast.success("Ficha actualizada.");
       setOpen(false);
@@ -420,6 +423,7 @@ function EditFichaDialog({
         <Button
           variant="ghost"
           size="sm"
+          onClick={openWithFreshValues}
           className="font-ui h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           Editar
@@ -495,7 +499,7 @@ function EditFichaDialog({
   );
 }
 
-function DeleteFichaButton({ fichaId }: { fichaId: string }) {
+function DeleteFichaButton({ fichaId }: { fichaId: Id<"fichas"> }) {
   const remove = useMutation(api.fichas.remove);
   const [busy, setBusy] = useState(false);
 
@@ -503,7 +507,7 @@ function DeleteFichaButton({ fichaId }: { fichaId: string }) {
     if (!window.confirm("¿Eliminar esta ficha del catálogo?")) return;
     setBusy(true);
     try {
-      await remove({ fichaId: fichaId as any });
+      await remove({ fichaId });
       toast.success("Ficha eliminada.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al eliminar.");
