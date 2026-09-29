@@ -23,19 +23,17 @@ const schema = defineSchema(
 
     // the users table is the default users table that is brought in by the authTables
     users: defineTable({
-      name: v.optional(v.string()), // name of the user. do not remove
-      image: v.optional(v.string()), // image of the user. do not remove
-      email: v.optional(v.string()), // email of the user. do not remove
-      emailVerificationTime: v.optional(v.number()), // email verification time. do not remove
-      isAnonymous: v.optional(v.boolean()), // is the user anonymous. do not remove
+      name: v.optional(v.string()),
+      image: v.optional(v.string()),
+      email: v.optional(v.string()),
+      emailVerificationTime: v.optional(v.number()),
+      isAnonymous: v.optional(v.boolean()),
 
-      role: v.optional(roleValidator), // role of the user. do not remove
+      role: v.optional(roleValidator),
       workCenterIds: v.optional(v.array(v.id("workCenters"))),
-    }).index("email", ["email"]), // index for the email. do not remove or modify
-
-    // ---------------------------------------------------------------------------
-    // Domain tables (v1)
-    // ---------------------------------------------------------------------------
+      /** Admin-set block flag: blocked users cannot sign in. */
+      blocked: v.optional(v.boolean()),
+    }).index("email", ["email"]),
 
     // Work centers ("centros de trabajo")
     workCenters: defineTable({
@@ -44,10 +42,17 @@ const schema = defineSchema(
       address: v.string(),
     }).index("code", ["code"]),
 
-    // Chemical product data sheets: fichas técnicas and fichas de seguridad
+    // Catalog items: fichas técnicas, fichas de seguridad, manuales de
+    // instrucciones e instrucciones de trabajo. Each belongs to one or more
+    // work centers and points at a document (URL or Supabase storage path).
     fichas: defineTable({
       title: v.string(),
-      kind: v.union(v.literal("ficha_tecnica"), v.literal("ficha_seguridad")),
+      kind: v.union(
+        v.literal("ficha_tecnica"),
+        v.literal("ficha_seguridad"),
+        v.literal("manual_instrucciones"),
+        v.literal("instrucciones_trabajo"),
+      ),
       productName: v.string(),
       manufacturer: v.optional(v.string()),
       url: v.string(),
@@ -58,6 +63,7 @@ const schema = defineSchema(
     // Admin-created invitations (admin "adds users" by email)
     invites: defineTable({
       email: v.string(),
+      name: v.optional(v.string()),
       role: roleValidator,
       centerIds: v.array(v.id("workCenters")),
       status: v.union(

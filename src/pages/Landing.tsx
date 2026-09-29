@@ -34,10 +34,10 @@ export default function Landing() {
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-3">
           <div className="flex size-8 items-center justify-center rounded-sm border border-foreground/25 bg-card">
-            <span className="font-display text-sm font-semibold">V</span>
+            <span className="font-display text-sm font-semibold">U</span>
           </div>
           <span className="font-ui text-sm font-medium tracking-wide">
-            Vadeos
+            User Manager Pro
           </span>
         </div>
         <nav className="font-ui text-sm text-muted-foreground">
@@ -57,14 +57,14 @@ export default function Landing() {
           transition={{ duration: 0.5 }}
           className="kicker"
         >
-          Documentación técnica · Seguridad química
+          Gestión de usuarios · Documentación técnica · Seguridad química
         </motion.p>
         <motion.h1
           {...fadeUp}
           transition={{ duration: 0.6, delay: 0.05 }}
           className="mt-6 max-w-3xl text-4xl leading-[1.1] font-semibold sm:text-6xl"
         >
-          Cada centro, con sus fichas.
+          Cada centro, con su documentación.
           <span className="block text-muted-foreground">
             Nada más, nada menos.
           </span>
@@ -74,10 +74,10 @@ export default function Landing() {
           transition={{ duration: 0.6, delay: 0.12 }}
           className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground"
         >
-          Vadeos organiza fichas técnicas y de seguridad de productos químicos
-          por centro de trabajo. Los administradores gestionan usuarios y
-          centros; cada persona consulta exactamente la documentación de su
-          centro.
+          User Manager Pro organiza fichas técnicas, fichas de seguridad,
+          manuales e instrucciones de trabajo por centro de trabajo. Los
+          administradores gestionan personas y permisos; cada usuario consulta
+          exactamente la documentación de su centro.
         </motion.p>
         <motion.div
           {...fadeUp}
@@ -106,21 +106,22 @@ export default function Landing() {
             <div className="bg-card p-8">
               <Users className="size-5 text-muted-foreground" />
               <h3 className="font-ui mt-4 text-sm font-semibold">
-                Usuarios y roles
+                Usuarios con nombre, rol y centro
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Administradores y usuarios, con centros de trabajo asignados de
-                forma explícita.
+                De cada usuario se gestionan su nombre, su centro de trabajo y
+                su rol. Los administradores añaden, bloquean, eliminan y
+                modifican cuentas.
               </p>
             </div>
             <div className="bg-card p-8">
               <FileText className="size-5 text-muted-foreground" />
               <h3 className="font-ui mt-4 text-sm font-semibold">
-                Fichas técnicas y de seguridad
+                Cuatro tipos de documento
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Toda la documentación de cada producto químico, asociada a los
-                centros donde se utiliza.
+                Fichas técnicas, fichas de seguridad, manuales de instrucciones
+                e instrucciones de trabajo, siempre asignados a un centro.
               </p>
             </div>
             <div className="bg-card p-8">
@@ -130,7 +131,7 @@ export default function Landing() {
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Cada usuario solo ve las fichas de sus centros. Los
-                administradores ven y gestionan todo.
+                administradores ven y gestionan todo el catálogo.
               </p>
             </div>
           </div>
@@ -147,18 +148,18 @@ export default function Landing() {
             {[
               {
                 step: "01",
-                title: "El administrador crea los centros",
-                body: "Cada centro de trabajo se registra con nombre, código y dirección. Es el eje de todo el archivo.",
+                title: "El administrador crea los centros de trabajo",
+                body: "Cada centro se registra con nombre, código y dirección. Es el eje del catálogo: toda ficha pertenece a uno o varios centros.",
               },
               {
                 step: "02",
-                title: "Añade usuarios y asigna centros",
-                body: "Los nuevos usuarios reciben un acceso por correo; al entrar, ya tienen sus centros y su rol listos.",
+                title: "Añade usuarios con nombre, rol y centros",
+                body: "Cada persona recibe un acceso por correo. Al entrar, ya tiene su nombre, su rol y sus centros de trabajo listos.",
               },
               {
                 step: "03",
-                title: "Sube fichas y asócialas a centros",
-                body: "Fichas técnicas y de seguridad de productos químicos, siempre disponibles desde el espacio del centro.",
+                title: "Sube fichas y asígnalas a cada centro",
+                body: "Pega la URL donde está colgado el documento o súbelo directamente al almacenamiento del proyecto. Queda disponible desde el catálogo.",
               },
             ].map((item) => (
               <div
@@ -190,7 +191,8 @@ export default function Landing() {
             Tu centro, a un paso.
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Entra con tu correo y consulta las fichas de tu centro de trabajo.
+            Entra con tu correo y consulta la documentación de tu centro de
+            trabajo.
           </p>
           <Link
             to={primaryHref}
@@ -205,7 +207,7 @@ export default function Landing() {
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-8">
           <span className="font-ui text-xs text-muted-foreground">
-            Vadeos · Fichas por centro de trabajo
+            User Manager Pro · Documentación por centro de trabajo
           </span>
           <span className="font-ui text-xs text-muted-foreground">
             Versión 1

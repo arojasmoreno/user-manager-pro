@@ -7,6 +7,8 @@ import { requireAdmin, requireUser } from "./access";
 export const fichaKindValidator = v.union(
   v.literal("ficha_tecnica"),
   v.literal("ficha_seguridad"),
+  v.literal("manual_instrucciones"),
+  v.literal("instrucciones_trabajo"),
 );
 
 // ---------------------------------------------------------------------------

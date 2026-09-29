@@ -41,10 +41,10 @@ export function WorkspaceShell({
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex size-8 items-center justify-center rounded-sm border border-foreground/25 bg-card">
-              <span className="font-display text-sm font-semibold">V</span>
+              <span className="font-display text-sm font-semibold">U</span>
             </div>
             <div className="leading-tight">
-              <p className="font-ui text-sm font-medium">Vadeos</p>
+              <p className="font-ui text-sm font-medium">User Manager Pro</p>
               <p className="font-ui text-[11px] text-muted-foreground">
                 {user?.name || user?.email || "Mi espacio"}
               </p>
