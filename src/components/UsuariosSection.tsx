@@ -1,5 +1,7 @@
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { ErrorState } from "@/components/ErrorState";
+import { useSafeQuery } from "@/hooks/use-safe-query";
 import { ROLES } from "@/lib/roles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import {
   Ban,
   Mail,
@@ -437,13 +439,19 @@ function DeleteUserButton({ target }: { target: UserRow }) {
 // ---------------------------------------------------------------------------
 
 export function UsuariosSection() {
-  const me = useQuery(api.users.currentUser, {});
-  const users = useQuery(api.access.listUsers, {});
-  const centers = useQuery(api.access.listCenters, {});
-  const invites = useQuery(api.access.listInvites, {});
+  const me = useSafeQuery(api.users.currentUser);
+  const users = useSafeQuery(api.access.listUsers);
+  const centers = useSafeQuery(api.access.listCenters);
+  const invites = useSafeQuery(api.access.listInvites);
   const revokeInvite = useMutation(api.access.revokeInvite);
 
-  const pending = (invites ?? []).filter((i) => i.status === "pending");
+  const queryError =
+    users.error ?? centers.error ?? invites.error ?? me.error ?? null;
+  if (queryError) {
+    return <ErrorState message={queryError.message} />;
+  }
+
+  const pending = (invites.data ?? []).filter((i) => i.status === "pending");
 
   const handleRevoke = async (inviteId: string) => {
     try {
@@ -465,11 +473,11 @@ export function UsuariosSection() {
             cuentas cuando haga falta.
           </p>
         </div>
-        <InviteDialog centers={centers ?? []} />
+        <InviteDialog centers={centers.data ?? []} />
       </div>
 
       {/* Pending invites */}
-      {invites !== undefined && pending.length > 0 && (
+      {invites.data !== undefined && pending.length > 0 && (
         <section>
           <h3 className="font-ui flex items-center gap-2 text-sm font-medium">
             <Mail className="size-4 text-muted-foreground" />
@@ -514,10 +522,12 @@ export function UsuariosSection() {
         <h3 className="font-ui flex items-center gap-2 text-sm font-medium">
           <Users className="size-4 text-muted-foreground" />
           Cuentas
-          <span className="text-muted-foreground">({(users ?? []).length})</span>
+          <span className="text-muted-foreground">
+            ({(users.data ?? []).length})
+          </span>
         </h3>
 
-        {!users ? (
+        {!users.data ? (
           <div className="mt-3 space-y-3">
             {[0, 1, 2].map((i) => (
               <div key={i} className="h-16 animate-pulse rounded-sm bg-muted" />
@@ -525,11 +535,13 @@ export function UsuariosSection() {
           </div>
         ) : (
           <div className="mt-3 overflow-hidden rounded-sm border border-border">
-            {users.map((u, idx) => {
-              const isSelf = me?._id === u._id;
+            {users.data.map((u, idx) => {
+              const isSelf = me.data?._id === u._id;
               const isBlocked = u.blocked === true;
               const assigned = (u.workCenterIds ?? [])
-                .map((id) => (centers ?? []).find((c) => c._id === id)?.name)
+                .map((id) =>
+                  (centers.data ?? []).find((c) => c._id === id)?.name,
+                )
                 .filter(Boolean) as string[];
               return (
                 <div
@@ -587,7 +599,7 @@ export function UsuariosSection() {
                   <div className="flex items-center gap-1">
                     <EditUserDialog
                       target={u as UserRow}
-                      centers={centers ?? []}
+                      centers={centers.data ?? []}
                       isSelf={isSelf}
                     />
                     <BlockButton target={u as UserRow} isSelf={isSelf} />

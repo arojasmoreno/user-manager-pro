@@ -62,16 +62,34 @@ class RootErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-6">
-          <div className="max-w-lg text-center">
-            <p className="text-sm font-semibold">Preview runtime error</p>
-            <p className="mt-2 text-xs text-muted-foreground break-words">
+          <div className="w-full max-w-lg border border-border bg-card p-10 text-center">
+            <p className="kicker">Error</p>
+            <p className="font-display mt-2 text-xl font-semibold">
+              Algo ha fallado en la aplicación
+            </p>
+            <p className="mt-3 text-xs break-words text-muted-foreground">
               {this.state.message}
             </p>
             {this.state.stack && (
-              <pre className="mt-3 text-left text-[10px] leading-4 text-muted-foreground/80 max-h-40 overflow-auto rounded border border-border/60 p-2">
+              <pre className="mt-3 max-h-40 overflow-auto rounded-sm border border-border/60 p-2 text-left text-[10px] leading-4 text-muted-foreground/80">
                 {this.state.stack}
               </pre>
             )}
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="font-ui inline-flex h-10 items-center justify-center rounded-sm bg-primary px-5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Reintentar
+              </button>
+              <a
+                href="/"
+                className="font-ui inline-flex h-10 items-center justify-center rounded-sm border border-border bg-card px-5 text-sm font-medium transition-colors hover:bg-accent"
+              >
+                Volver al inicio
+              </a>
+            </div>
           </div>
         </div>
       );
