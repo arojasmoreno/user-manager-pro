@@ -1,6 +1,8 @@
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { ErrorState } from "@/components/ErrorState";
 import { useAuth } from "@/hooks/use-auth";
+import { useSafeQuery } from "@/hooks/use-safe-query";
 import { ROLES } from "@/lib/roles";
 import { isSupabaseConfigured, supabase, FICHAS_BUCKET } from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
@@ -522,13 +524,23 @@ export function FichasSection() {
   const { user } = useAuth();
   const isAdmin = user?.role === ROLES.ADMIN;
 
-  const fichas = useQuery(api.fichas.listMine, {});
-  const adminFichas = useQuery(api.fichas.listAll, isAdmin ? {} : "skip");
-  const adminCenters = useQuery(api.access.listCenters, isAdmin ? {} : "skip");
-  const myCentersData = useQuery(api.access.listMyCenters, isAdmin ? "skip" : {});
-  const myCenters = isAdmin ? (adminCenters ?? []) : (myCentersData ?? []);
+  const fichas = useSafeQuery(api.fichas.listMine);
+  const adminFichas = useSafeQuery(api.fichas.listAll, isAdmin ? {} : "skip");
+  const adminCenters = useSafeQuery(api.access.listCenters, isAdmin ? {} : "skip");
+  const myCentersData = useSafeQuery(
+    api.access.listMyCenters,
+    isAdmin ? "skip" : {},
+  );
+  const myCenters = isAdmin ? (adminCenters.data ?? []) : (myCentersData.data ?? []);
 
-  const list = isAdmin ? (adminFichas ?? fichas) : fichas;
+  const queryError =
+    fichas.error ??
+    adminFichas.error ??
+    adminCenters.error ??
+    myCentersData.error ??
+    null;
+
+  const list = isAdmin ? (adminFichas.data ?? fichas.data) : fichas.data;
 
   const [filter, setFilter] = useState<"all" | FichaKind>("all");
   const [search, setSearch] = useState("");
@@ -560,6 +572,10 @@ export function FichasSection() {
       (f) => f.kind === "instrucciones_trabajo",
     ).length,
   };
+
+  if (queryError) {
+    return <ErrorState message={queryError.message} />;
+  }
 
   return (
     <div className="space-y-8">

@@ -1,5 +1,7 @@
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { ErrorState } from "@/components/ErrorState";
+import { useSafeQuery } from "@/hooks/use-safe-query";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { Building2, Plus, Trash2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -159,17 +161,25 @@ function DeleteCenterButton({ centerId }: { centerId: string }) {
 }
 
 export function CentrosSection() {
-  const centers = useQuery(api.access.listCenters, {});
-  const users = useQuery(api.access.listUsers, {});
-  const fichas = useQuery(api.fichas.listAll, {});
+  const centers = useSafeQuery(api.access.listCenters);
+  const users = useSafeQuery(api.access.listUsers);
+  const fichas = useSafeQuery(api.fichas.listAll);
+
+  const queryError = centers.error ?? users.error ?? fichas.error ?? null;
 
   const userCount = (centerId: string) =>
-    (users ?? []).filter((u) => (u.workCenterIds ?? []).includes(centerId as any))
-      .length;
+    (users.data ?? []).filter((u) =>
+      (u.workCenterIds ?? []).includes(centerId as any),
+    ).length;
 
   const fichaCount = (center: Doc<"workCenters">) =>
-    (fichas ?? []).filter((f) => (f.workCenterIds ?? []).includes(center._id))
-      .length;
+    (fichas.data ?? []).filter((f) =>
+      (f.workCenterIds ?? []).includes(center._id),
+    ).length;
+
+  if (queryError) {
+    return <ErrorState message={queryError.message} />;
+  }
 
   return (
     <div className="space-y-8">
@@ -185,13 +195,13 @@ export function CentrosSection() {
         <CreateCenterDialog />
       </div>
 
-      {!centers ? (
+      {!centers.data ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-sm bg-muted" />
           ))}
         </div>
-      ) : centers.length === 0 ? (
+      ) : centers.data.length === 0 ? (
         <div className="border border-dashed border-border bg-card/50 p-14 text-center">
           <Building2 className="mx-auto size-8 text-muted-foreground/60" />
           <p className="font-display mt-4 text-lg">Aún no hay centros</p>
@@ -202,7 +212,7 @@ export function CentrosSection() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-sm border border-border">
-          {centers.map((c, idx) => (
+          {centers.data.map((c, idx) => (
             <div
               key={c._id}
               className={
