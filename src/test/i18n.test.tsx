@@ -210,7 +210,7 @@ describe("traducciones de fichas", () => {
   });
 
   test("rechaza un idioma desconocido", async () => {
-    const { admin, fichaA } = await seed(setup());
+    const { admin } = await seed(setup());
     expect(
       await admin.query(api.traducciones.listTranslations, { locale: "de-DE" }),
     ).toEqual([]);
