@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { BackToHome } from "@/components/BackToHome";
 import { useAuth } from "@/hooks/use-auth";
 import { ROLES } from "@/lib/roles";
+import { ASSISTANT_ENABLED } from "@/lib/features";
 import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
@@ -30,7 +31,9 @@ export function WorkspaceShell({
 
   const tabs: { id: WorkspaceTab; label: string; adminOnly?: boolean }[] = [
     { id: "fichas", label: "Fichas" },
-    { id: "asistente", label: "Asistente" },
+    ...(ASSISTANT_ENABLED
+      ? [{ id: "asistente" as const, label: "Asistente" }]
+      : []),
     { id: "centros", label: "Centros", adminOnly: true },
     { id: "usuarios", label: "Usuarios", adminOnly: true },
   ];
