@@ -34,10 +34,10 @@ export default function Landing() {
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-3">
           <div className="flex size-8 items-center justify-center rounded-sm border border-foreground/25 bg-card">
-            <span className="font-display text-sm font-semibold">U</span>
+            <span className="font-display text-sm font-semibold">D</span>
           </div>
           <span className="font-ui text-sm font-medium tracking-wide">
-            User Manager Pro
+            Doc Manager
           </span>
         </div>
         <nav className="font-ui text-sm text-muted-foreground">
@@ -74,7 +74,7 @@ export default function Landing() {
           transition={{ duration: 0.6, delay: 0.12 }}
           className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground"
         >
-          User Manager Pro organiza fichas técnicas, fichas de seguridad,
+          Doc Manager organiza fichas técnicas, fichas de seguridad,
           manuales e instrucciones de trabajo por centro de trabajo. Los
           administradores gestionan personas y permisos; cada usuario consulta
           exactamente la documentación de su centro.
@@ -207,7 +207,7 @@ export default function Landing() {
       <footer className="border-t border-border">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-8">
           <span className="font-ui text-xs text-muted-foreground">
-            User Manager Pro · Documentación por centro de trabajo
+            Doc Manager · Documentación por centro de trabajo
           </span>
           <span className="font-ui text-xs text-muted-foreground">
             Versión 1
