@@ -42,77 +42,78 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* CHANGE VALUES FOR THEME — Retro Arcade: CRT black, neon red/blue/yellow, blocky chrome */
+/* CHANGE VALUES FOR THEME — Northern Lights: cold black-blue night, aurora glow */
 :root {
-  --radius: 0.25rem;
+  --radius: 0.5rem;
 
-  /* Neon triad: the only saturated hues in the app. */
-  --neon-red: #ff2b2b;
-  --neon-blue: #5b8bff;
-  --neon-yellow: #ffe600;
-  --neon-dim: #2a2a38;
+  /* The three lights of the aurora, kept soft and desaturated. */
+  --aurora-green: #3ddc97;
+  --aurora-cyan: #38bdf8;
+  --aurora-violet: #a78bfa;
+  --glow-soft: 91 220 151;
+  --glow-cool: 56 189 248;
 
-  --background: #000000;
-  --foreground: #ededed;
-  --card: #0a0a0f;
-  --card-foreground: #ededed;
-  --popover: #0a0a0f;
-  --popover-foreground: #ededed;
-  --primary: var(--neon-red);
-  --primary-foreground: #000000;
-  --secondary: var(--neon-blue);
-  --secondary-foreground: #000000;
-  --muted: #14141c;
-  --muted-foreground: #9a9aa8;
-  --accent: var(--neon-yellow);
-  --accent-foreground: #000000;
-  --destructive: var(--neon-red);
-  --border: #2a2a38;
-  --input: #2a2a38;
-  --ring: var(--neon-yellow);
-  --chart-1: var(--neon-red);
-  --chart-2: var(--neon-blue);
-  --chart-3: var(--neon-yellow);
-  --chart-4: #ffffff;
-  --chart-5: #6a6a7a;
-  --sidebar: #050508;
-  --sidebar-foreground: #ededed;
-  --sidebar-primary: var(--neon-red);
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: var(--neon-blue);
-  --sidebar-accent-foreground: #000000;
-  --sidebar-border: #2a2a38;
-  --sidebar-ring: var(--neon-yellow);
+  --background: #050a14;
+  --foreground: #e8eefc;
+  --card: #0b1222;
+  --card-foreground: #e8eefc;
+  --popover: #0b1222;
+  --popover-foreground: #e8eefc;
+  --primary: var(--aurora-green);
+  --primary-foreground: #04121a;
+  --secondary: var(--aurora-cyan);
+  --secondary-foreground: #04121a;
+  --muted: #101a2e;
+  --muted-foreground: #8fa3c4;
+  --accent: var(--aurora-violet);
+  --accent-foreground: #0a0620;
+  --destructive: #f26a6a;
+  --border: #1b2942;
+  --input: #1b2942;
+  --ring: var(--aurora-cyan);
+  --chart-1: var(--aurora-green);
+  --chart-2: var(--aurora-cyan);
+  --chart-3: var(--aurora-violet);
+  --chart-4: #7dd3fc;
+  --chart-5: #34d399;
+  --sidebar: #070d1a;
+  --sidebar-foreground: #e8eefc;
+  --sidebar-primary: var(--aurora-green);
+  --sidebar-primary-foreground: #04121a;
+  --sidebar-accent: var(--aurora-cyan);
+  --sidebar-accent-foreground: #04121a;
+  --sidebar-border: #1b2942;
+  --sidebar-ring: var(--aurora-cyan);
 }
 
-/* The arcade cabinet only has one screen: light and dark are the same. */
+/* Night time only: light and dark resolve to the same sky. */
 .dark {
-  --background: #000000;
-  --foreground: #ededed;
-  --card: #0a0a0f;
-  --card-foreground: #ededed;
-  --popover: #0a0a0f;
-  --popover-foreground: #ededed;
-  --primary: var(--neon-red);
-  --primary-foreground: #000000;
-  --secondary: var(--neon-blue);
-  --secondary-foreground: #000000;
-  --muted: #14141c;
-  --muted-foreground: #9a9aa8;
-  --accent: var(--neon-yellow);
-  --accent-foreground: #000000;
-  --destructive: var(--neon-red);
-  --border: #2a2a38;
-  --input: #2a2a38;
-  --ring: var(--neon-yellow);
-  --sidebar: #050508;
-  --sidebar-foreground: #ededed;
-  --sidebar-primary: var(--neon-red);
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: var(--neon-blue);
-  --sidebar-accent-foreground: #000000;
-  --sidebar-border: #2a2a38;
-  --sidebar-ring: var(--neon-yellow);
+  --background: #050a14;
+  --foreground: #e8eefc;
+  --card: #0b1222;
+  --card-foreground: #e8eefc;
+  --popover: #0b1222;
+  --popover-foreground: #e8eefc;
+  --primary: var(--aurora-green);
+  --primary-foreground: #04121a;
+  --secondary: var(--aurora-cyan);
+  --secondary-foreground: #04121a;
+  --muted: #101a2e;
+  --muted-foreground: #8fa3c4;
+  --accent: var(--aurora-violet);
+  --accent-foreground: #0a0620;
+  --destructive: #f26a6a;
+  --border: #1b2942;
+  --input: #1b2942;
+  --ring: var(--aurora-cyan);
+  --sidebar: #070d1a;
+  --sidebar-foreground: #e8eefc;
+  --sidebar-primary: var(--aurora-green);
+  --sidebar-primary-foreground: #04121a;
+  --sidebar-accent: var(--aurora-cyan);
+  --sidebar-accent-foreground: #04121a;
+  --sidebar-border: #1b2942;
+  --sidebar-ring: var(--aurora-cyan);
 }
 
 @layer base {
@@ -125,97 +126,164 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Consolas",
-      "Courier New", monospace;
-    letter-spacing: 0.01em;
+    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+      "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.005em;
   }
   h1, h2, h3, h4 {
-    font-family: "Press Start 2P", ui-monospace, "Courier New", monospace;
-    letter-spacing: 0;
-    line-height: 1.6;
-    /* Pixel fonts are very wide: never let a long Spanish word overflow. */
-    overflow-wrap: break-word;
+    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
   }
   button:not([disabled]),
   [role="button"]:not([disabled]) {
     cursor: pointer;
   }
   ::selection {
-    background: var(--neon-yellow);
-    color: #000000;
+    background: rgb(var(--glow-soft) / 35%);
+    color: var(--foreground);
   }
 
-  /* CRT scanlines. Decorative only: it never intercepts pointer events. */
-  body::after {
+  /* The aurora itself: uneven radial pools of green, cyan and violet drifting
+     across the sky. Decorative, never in the way of a click. */
+  body::before {
     content: "";
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    z-index: 1;
     pointer-events: none;
-    background: repeating-linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 4%) 0px,
-      rgb(255 255 255 / 4%) 1px,
-      transparent 1px,
-      transparent 3px
-    );
+    background:
+      radial-gradient(
+        60vw 45vh at 12% 8%,
+        rgb(var(--glow-soft) / 16%) 0%,
+        transparent 70%
+      ),
+      radial-gradient(
+        50vw 40vh at 88% 18%,
+        rgb(167 139 250 / 13%) 0%,
+        transparent 70%
+      ),
+      radial-gradient(
+        70vw 50vh at 72% 96%,
+        rgb(var(--glow-cool) / 12%) 0%,
+        transparent 72%
+      ),
+      radial-gradient(
+        45vw 38vh at 6% 82%,
+        rgb(var(--glow-soft) / 8%) 0%,
+        transparent 70%
+      );
+    animation: aurora-drift 26s ease-in-out infinite alternate;
   }
 
-  /* Blocky arcade chrome: hard offset shadows instead of soft blurs, and a
-     "press" feel on hover. Driven by data-slot/data-variant so every shadcn
-     component picks it up without being touched. */
+  /* Soft light instead of hard offsets: controls glow faintly and brighten on
+     hover. Driven by data-slot so every component picks it up untouched. */
   [data-slot="button"] {
-    box-shadow: 3px 3px 0 0 var(--neon-dim);
-    transition: transform 80ms steps(2, end), box-shadow 80ms steps(2, end);
+    transition: box-shadow 220ms ease, background-color 220ms ease,
+      transform 220ms ease, border-color 220ms ease;
   }
   [data-slot="button"][data-variant="default"] {
-    box-shadow: 3px 3px 0 0 var(--neon-blue);
+    box-shadow: 0 0 24px -6px rgb(var(--glow-soft) / 55%);
+  }
+  [data-slot="button"][data-variant="default"]:hover:not(:disabled) {
+    box-shadow: 0 0 34px -4px rgb(var(--glow-soft) / 75%);
   }
   [data-slot="button"][data-variant="secondary"] {
-    box-shadow: 3px 3px 0 0 var(--neon-red);
+    box-shadow: 0 0 22px -8px rgb(var(--glow-cool) / 60%);
   }
-  [data-slot="button"][data-variant="destructive"] {
-    box-shadow: 3px 3px 0 0 var(--neon-yellow);
+  [data-slot="button"][data-variant="secondary"]:hover:not(:disabled) {
+    box-shadow: 0 0 32px -6px rgb(var(--glow-cool) / 80%);
+  }
+  [data-slot="button"][data-variant="outline"]:hover:not(:disabled) {
+    border-color: rgb(var(--glow-cool) / 55%);
+    box-shadow: 0 0 22px -10px rgb(var(--glow-cool) / 60%);
   }
   [data-slot="button"][data-variant="ghost"],
   [data-slot="button"][data-variant="link"] {
     box-shadow: none;
   }
-  [data-slot="button"]:hover:not(:disabled) {
-    transform: translate(1px, 1px);
-    box-shadow: 2px 2px 0 0 var(--neon-dim);
+  [data-slot="button"]:active:not(:disabled) {
+    transform: translateY(1px);
   }
   [data-slot="card"] {
-    box-shadow: 4px 4px 0 0 rgb(91 139 255 / 28%);
+    box-shadow: 0 18px 50px -32px rgb(var(--glow-cool) / 45%);
+  }
+  [data-slot="card"]:hover {
+    border-color: rgb(var(--glow-cool) / 28%);
   }
 }
 
-/* Retro Arcade helpers */
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(2%, -1.5%, 0) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(-1.5%, 1.5%, 0) scale(1.04);
+    opacity: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+}
+
+/* Northern Lights helpers */
 @layer utilities {
   .font-ui {
-    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Consolas",
-      "Courier New", monospace;
-    letter-spacing: 0.01em;
+    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+      "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.005em;
   }
   .font-display {
-    font-family: "Press Start 2P", ui-monospace, "Courier New", monospace;
-    letter-spacing: 0;
-    line-height: 1.6;
-    overflow-wrap: break-word;
+    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+  .font-mono-ui {
+    font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo,
+      Consolas, monospace;
   }
   .kicker {
-    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Consolas",
-      "Courier New", monospace;
+    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
     font-size: 0.6875rem;
-    letter-spacing: 0.24em;
+    letter-spacing: 0.22em;
     text-transform: uppercase;
-    font-weight: 700;
-    color: var(--neon-yellow);
+    font-weight: 600;
+    background: linear-gradient(
+      100deg,
+      var(--aurora-green),
+      var(--aurora-cyan) 55%,
+      var(--aurora-violet)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
   .hairline {
     border-color: var(--border);
   }
   .plinth {
     background: var(--card);
+  }
+  /** Gradient text, for the few places that deserve the full aurora. */
+  .aurora-text {
+    background: linear-gradient(
+      100deg,
+      var(--aurora-green),
+      var(--aurora-cyan) 50%,
+      var(--aurora-violet)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 }
