@@ -239,10 +239,11 @@ export function CentrosSection() {
               <div className="flex items-center gap-5">
                 <span className="font-ui flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Users className="size-3.5" />
-                  {userCount(c._id)} usuarios
+                  {userCount(c._id)}{" "}
+                  {userCount(c._id) === 1 ? "usuario" : "usuarios"}
                 </span>
                 <span className="font-ui text-xs text-muted-foreground">
-                  {fichaCount(c)} fichas
+                  {fichaCount(c)} {fichaCount(c) === 1 ? "ficha" : "fichas"}
                 </span>
                 <DeleteCenterButton centerId={c._id} />
               </div>

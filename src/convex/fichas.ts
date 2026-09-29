@@ -22,6 +22,7 @@ export const listMine = query({
   returns: v.array(
     v.object({
       _id: v.id("fichas"),
+      _creationTime: v.number(),
       title: v.string(),
       kind: fichaKindValidator,
       productName: v.optional(v.string()),
@@ -52,6 +53,7 @@ export const listAll = query({
   returns: v.array(
     v.object({
       _id: v.id("fichas"),
+      _creationTime: v.number(),
       title: v.string(),
       kind: fichaKindValidator,
       productName: v.optional(v.string()),
