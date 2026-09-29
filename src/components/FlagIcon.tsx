@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 import type { Locale } from "@/i18n/locales";
 
 /**
- * Blocky flag icons drawn as hard-edged SVG rectangles, so they read like
- * sprites on an arcade cabinet and stay crisp at any size. Emoji flags are not
- * used on purpose: most Windows browsers do not render them.
+ * Flags drawn as hard-edged SVG rectangles so they stay crisp at any size.
+ * Emoji flags are not used on purpose: most Windows browsers do not render
+ * them and would show the country code instead.
  */
 const FLAGS: Record<string, ReactElement> = {
   ES: (
