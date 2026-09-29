@@ -42,74 +42,77 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* CHANGE VALUES FOR THEME — Studio: gallery-clean warm off-whites, muted neutrals */
+/* CHANGE VALUES FOR THEME — Retro Arcade: CRT black, neon red/blue/yellow, blocky chrome */
 :root {
-  --radius: 0.375rem;
-  --background: oklch(0.977 0.004 84);
-  --foreground: oklch(0.26 0.012 60);
-  --card: oklch(0.995 0.002 84);
-  --card-foreground: oklch(0.26 0.012 60);
-  --popover: oklch(0.995 0.002 84);
-  --popover-foreground: oklch(0.26 0.012 60);
-  --primary: oklch(0.29 0.014 60);
-  --primary-foreground: oklch(0.977 0.004 84);
-  --secondary: oklch(0.945 0.006 84);
-  --secondary-foreground: oklch(0.32 0.012 60);
-  --muted: oklch(0.945 0.006 84);
-  --muted-foreground: oklch(0.5 0.012 60);
-  --accent: oklch(0.93 0.008 84);
-  --accent-foreground: oklch(0.29 0.014 60);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.9 0.008 80);
-  --input: oklch(0.9 0.008 80);
-  --ring: oklch(0.62 0.02 70);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.965 0.005 84);
-  --sidebar-foreground: oklch(0.26 0.012 60);
-  --sidebar-primary: oklch(0.29 0.014 60);
-  --sidebar-primary-foreground: oklch(0.977 0.004 84);
-  --sidebar-accent: oklch(0.93 0.008 84);
-  --sidebar-accent-foreground: oklch(0.29 0.014 60);
-  --sidebar-border: oklch(0.9 0.008 80);
-  --sidebar-ring: oklch(0.62 0.02 70);
+  --radius: 0.25rem;
+
+  /* Neon triad: the only saturated hues in the app. */
+  --neon-red: #ff2b2b;
+  --neon-blue: #5b8bff;
+  --neon-yellow: #ffe600;
+  --neon-dim: #2a2a38;
+
+  --background: #000000;
+  --foreground: #ededed;
+  --card: #0a0a0f;
+  --card-foreground: #ededed;
+  --popover: #0a0a0f;
+  --popover-foreground: #ededed;
+  --primary: var(--neon-red);
+  --primary-foreground: #000000;
+  --secondary: var(--neon-blue);
+  --secondary-foreground: #000000;
+  --muted: #14141c;
+  --muted-foreground: #9a9aa8;
+  --accent: var(--neon-yellow);
+  --accent-foreground: #000000;
+  --destructive: var(--neon-red);
+  --border: #2a2a38;
+  --input: #2a2a38;
+  --ring: var(--neon-yellow);
+  --chart-1: var(--neon-red);
+  --chart-2: var(--neon-blue);
+  --chart-3: var(--neon-yellow);
+  --chart-4: #ffffff;
+  --chart-5: #6a6a7a;
+  --sidebar: #050508;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: var(--neon-red);
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: var(--neon-blue);
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #2a2a38;
+  --sidebar-ring: var(--neon-yellow);
 }
 
+/* The arcade cabinet only has one screen: light and dark are the same. */
 .dark {
-  --background: oklch(0.2 0.01 60);
-  --foreground: oklch(0.94 0.005 84);
-  --card: oklch(0.24 0.01 60);
-  --card-foreground: oklch(0.94 0.005 84);
-  --popover: oklch(0.24 0.01 60);
-  --popover-foreground: oklch(0.94 0.005 84);
-  --primary: oklch(0.9 0.008 84);
-  --primary-foreground: oklch(0.24 0.01 60);
-  --secondary: oklch(0.3 0.01 60);
-  --secondary-foreground: oklch(0.94 0.005 84);
-  --muted: oklch(0.3 0.01 60);
-  --muted-foreground: oklch(0.66 0.01 70);
-  --accent: oklch(0.32 0.01 60);
-  --accent-foreground: oklch(0.94 0.005 84);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #000000;
+  --foreground: #ededed;
+  --card: #0a0a0f;
+  --card-foreground: #ededed;
+  --popover: #0a0a0f;
+  --popover-foreground: #ededed;
+  --primary: var(--neon-red);
+  --primary-foreground: #000000;
+  --secondary: var(--neon-blue);
+  --secondary-foreground: #000000;
+  --muted: #14141c;
+  --muted-foreground: #9a9aa8;
+  --accent: var(--neon-yellow);
+  --accent-foreground: #000000;
+  --destructive: var(--neon-red);
+  --border: #2a2a38;
+  --input: #2a2a38;
+  --ring: var(--neon-yellow);
+  --sidebar: #050508;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: var(--neon-red);
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: var(--neon-blue);
+  --sidebar-accent-foreground: #000000;
+  --sidebar-border: #2a2a38;
+  --sidebar-ring: var(--neon-yellow);
 }
 
 @layer base {
@@ -122,43 +125,97 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-    letter-spacing: -0.011em;
+    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Consolas",
+      "Courier New", monospace;
+    letter-spacing: 0.01em;
   }
   h1, h2, h3, h4 {
-    font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-    letter-spacing: -0.02em;
+    font-family: "Press Start 2P", ui-monospace, "Courier New", monospace;
+    letter-spacing: 0;
+    line-height: 1.6;
+    /* Pixel fonts are very wide: never let a long Spanish word overflow. */
+    overflow-wrap: break-word;
   }
   button:not([disabled]),
   [role="button"]:not([disabled]) {
     cursor: pointer;
   }
+  ::selection {
+    background: var(--neon-yellow);
+    color: #000000;
+  }
+
+  /* CRT scanlines. Decorative only: it never intercepts pointer events. */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 4%) 0px,
+      rgb(255 255 255 / 4%) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+
+  /* Blocky arcade chrome: hard offset shadows instead of soft blurs, and a
+     "press" feel on hover. Driven by data-slot/data-variant so every shadcn
+     component picks it up without being touched. */
+  [data-slot="button"] {
+    box-shadow: 3px 3px 0 0 var(--neon-dim);
+    transition: transform 80ms steps(2, end), box-shadow 80ms steps(2, end);
+  }
+  [data-slot="button"][data-variant="default"] {
+    box-shadow: 3px 3px 0 0 var(--neon-blue);
+  }
+  [data-slot="button"][data-variant="secondary"] {
+    box-shadow: 3px 3px 0 0 var(--neon-red);
+  }
+  [data-slot="button"][data-variant="destructive"] {
+    box-shadow: 3px 3px 0 0 var(--neon-yellow);
+  }
+  [data-slot="button"][data-variant="ghost"],
+  [data-slot="button"][data-variant="link"] {
+    box-shadow: none;
+  }
+  [data-slot="button"]:hover:not(:disabled) {
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0 0 var(--neon-dim);
+  }
+  [data-slot="card"] {
+    box-shadow: 4px 4px 0 0 rgb(91 139 255 / 28%);
+  }
 }
 
-/* Studio editorial helpers */
+/* Retro Arcade helpers */
 @layer utilities {
   .font-ui {
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    letter-spacing: 0;
+    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Consolas",
+      "Courier New", monospace;
+    letter-spacing: 0.01em;
   }
   .font-display {
-    font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
-    letter-spacing: -0.02em;
+    font-family: "Press Start 2P", ui-monospace, "Courier New", monospace;
+    letter-spacing: 0;
+    line-height: 1.6;
+    overflow-wrap: break-word;
   }
   .kicker {
-    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-family: ui-monospace, "SFMono-Regular", "Menlo", "Consolas",
+      "Courier New", monospace;
     font-size: 0.6875rem;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
-    font-weight: 500;
-    color: var(--muted-foreground);
+    font-weight: 700;
+    color: var(--neon-yellow);
   }
   .hairline {
     border-color: var(--border);
   }
   .plinth {
-    background:
-      linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 2%, transparent), transparent 55%),
-      var(--card);
+    background: var(--card);
   }
 }

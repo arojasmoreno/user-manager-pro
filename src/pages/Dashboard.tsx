@@ -8,6 +8,7 @@ import {
   type WorkspaceTab,
 } from "@/components/WorkspaceShell";
 import { ROLES } from "@/lib/roles";
+import { ASSISTANT_ENABLED } from "@/lib/features";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
 
@@ -29,7 +30,7 @@ export default function Dashboard() {
   return (
     <WorkspaceShell tab={activeTab} onTabChange={setTab}>
       {activeTab === "fichas" && <FichasSection />}
-      {activeTab === "asistente" && <AsistenteSection />}
+      {ASSISTANT_ENABLED && activeTab === "asistente" && <AsistenteSection />}
       {isAdmin && activeTab === "centros" && <CentrosSection />}
       {isAdmin && activeTab === "usuarios" && <UsuariosSection />}
     </WorkspaceShell>
