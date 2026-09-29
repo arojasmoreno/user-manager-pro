@@ -1,7 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BackToHome } from "@/components/BackToHome";
+import { LanguagePicker } from "@/components/LanguagePicker";
 import { useAuth } from "@/hooks/use-auth";
+import { useI18n } from "@/i18n";
 import { ROLES } from "@/lib/roles";
 import { ASSISTANT_ENABLED } from "@/lib/features";
 import { LogOut } from "lucide-react";
@@ -20,6 +22,7 @@ export function WorkspaceShell({
   children: React.ReactNode;
 }) {
   const { user, signOut } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   const isAdmin = user?.role === ROLES.ADMIN;
@@ -57,11 +60,12 @@ export function WorkspaceShell({
           </div>
           <div className="flex items-center gap-2">
             <BackToHome />
+            <LanguagePicker />
             <Badge
               variant="outline"
               className="font-ui rounded-sm border-border text-[11px] font-medium uppercase tracking-wider text-muted-foreground"
             >
-              {isAdmin ? "Administrador" : "Usuario"}
+              {t(isAdmin ? "Administrador" : "Usuario")}
             </Badge>
             <Button
               variant="ghost"
@@ -70,25 +74,25 @@ export function WorkspaceShell({
               onClick={handleSignOut}
             >
               <LogOut className="size-3.5" />
-              Salir
+              {t("Salir")}
             </Button>
           </div>
         </div>
         <div className="mx-auto w-full max-w-6xl px-6">
           <nav className="flex gap-6">
-            {visibleTabs.map((t) => (
+            {visibleTabs.map((tabItem) => (
               <button
-                key={t.id}
+                key={tabItem.id}
                 type="button"
-                onClick={() => onTabChange(t.id)}
+                onClick={() => onTabChange(tabItem.id)}
                 className={cn(
                   "font-ui -mb-px border-b-2 pb-3 pt-1 text-sm transition-colors",
-                  tab === t.id
+                  tab === tabItem.id
                     ? "border-foreground font-medium text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
               >
-                {t.label}
+                {t(tabItem.label)}
               </button>
             ))}
           </nav>

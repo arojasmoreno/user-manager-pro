@@ -1,4 +1,6 @@
 import { BackToHome } from "@/components/BackToHome";
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { useI18n } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +26,7 @@ function resolveRedirectAfterAuth(returnTo: string | null, fallback = "/dashboar
 
 function Auth({ redirectAfterAuth }: AuthProps = {}) {
   const { isLoading: authLoading, isAuthenticated, signIn } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirect = resolveRedirectAfterAuth(
@@ -54,7 +57,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       setError(
         err instanceof Error
           ? err.message
-          : "No se pudo enviar el código. Inténtalo de nuevo.",
+          : t("No se pudo enviar el código. Inténtalo de nuevo."),
       );
     } finally {
       setIsLoading(false);
@@ -71,7 +74,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       navigate(redirect, { replace: true });
     } catch (err) {
       console.error("OTP verification error:", err);
-      setError("El código introducido no es correcto.");
+      setError(t("El código introducido no es correcto."));
       setOtp("");
       setIsLoading(false);
     }
@@ -88,26 +91,29 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
             Doc Manager
           </span>
         </Link>
-        <BackToHome />
+        <div className="flex items-center gap-3">
+          <LanguagePicker />
+          <BackToHome />
+        </div>
       </header>
 
       <main className="flex flex-1 items-start justify-center px-6 pb-24 pt-16">
         <div className="w-full max-w-sm">
           {step === "signIn" ? (
             <form onSubmit={handleEmailSubmit}>
-              <p className="kicker">Acceso</p>
+              <p className="kicker">{t("Acceso")}</p>
               <h1 className="mt-4 text-3xl font-semibold">
-                Entra con tu correo
+                {t("Entra con tu correo")}
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                Te enviaremos un código de seis dígitos. Sin contraseñas.
+                {t("Te enviaremos un código de seis dígitos. Sin contraseñas.")}
               </p>
 
               <div className="relative mt-8">
                 <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   name="email"
-                  placeholder="nombre@empresa.com"
+                  placeholder={t("nombre@empresa.com")}
                   type="email"
                   className="h-11 rounded-sm pl-9"
                   autoComplete="email"
