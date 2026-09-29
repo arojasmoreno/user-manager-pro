@@ -81,9 +81,11 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
       <header className="mx-auto flex w-full max-w-6xl items-center px-6 py-6">
         <Link to="/" className="flex items-center gap-3">
           <div className="flex size-8 items-center justify-center rounded-sm border border-foreground/25 bg-card">
-            <span className="font-display text-sm font-semibold">V</span>
+            <span className="font-display text-sm font-semibold">U</span>
           </div>
-          <span className="font-ui text-sm font-medium tracking-wide">Vadeos</span>
+          <span className="font-ui text-sm font-medium tracking-wide">
+            User Manager Pro
+          </span>
         </Link>
       </header>
 
@@ -129,9 +131,10 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
               </Button>
 
               <p className="mt-8 border-t border-border pt-6 text-xs leading-relaxed text-muted-foreground">
-                ¿Primera vez? La primera cuenta que inicia sesión se convierte
-                en administradora. Si tu administrador ya te invitó, tus centros
-                y permisos se aplicarán automáticamente al verificar el código.
+                ¿Primera vez? La primera cuenta que inicia sesión puede
+                convertirse en administradora. Si tu administrador ya te invitó,
+                tu nombre, rol y centros se aplicarán automáticamente al
+                verificar el código.
               </p>
             </form>
           ) : (

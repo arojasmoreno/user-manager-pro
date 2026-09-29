@@ -24,19 +24,20 @@ import {
 } from "@/components/ui/select";
 import { useMutation, useQuery } from "convex/react";
 import {
+  Ban,
   Mail,
-  MailCheck,
-  MailX,
   ShieldCheck,
+  Trash2,
   UserRound,
+  UserRoundCheck,
   UserRoundPlus,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type UserRow = Doc<"users"> & { workCenterIds?: string[] };
+type UserRow = Doc<"users"> & { workCenterIds?: string[]; blocked?: boolean };
 type CenterDoc = Doc<"workCenters">;
 
 // ---------------------------------------------------------------------------
@@ -46,6 +47,7 @@ type CenterDoc = Doc<"workCenters">;
 function InviteDialog({ centers }: { centers: CenterDoc[] }) {
   const invite = useMutation(api.access.inviteUser);
   const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"admin" | "user">("user");
   const [centerIds, setCenterIds] = useState<string[]>([]);
@@ -66,14 +68,16 @@ function InviteDialog({ centers }: { centers: CenterDoc[] }) {
     try {
       await invite({
         email: email.trim().toLowerCase(),
+        name: name.trim() || undefined,
         role,
         centerIds: centerIds as any,
       });
       toast.success(
         role === "admin"
-          ? "Invitación creada: será administrador al entrar."
+          ? "Invitación creada: entrará como administrador."
           : "Invitación creada. Podrá entrar con su correo cuando quiera.",
       );
+      setName("");
       setEmail("");
       setRole("user");
       setCenterIds([]);
@@ -99,11 +103,22 @@ function InviteDialog({ centers }: { centers: CenterDoc[] }) {
             Añadir usuario
           </DialogTitle>
           <DialogDescription>
-            Registra el acceso por correo. Al verificar su código, la persona
-            entrará ya con este rol y estos centros.
+            Registra el acceso por correo con nombre, rol y centros. Al
+            verificar su código, la cuenta se crea ya con estos permisos.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
+              Nombre
+            </Label>
+            <Input
+              className="rounded-sm"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ana García"
+            />
+          </div>
           <div className="grid gap-2">
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
               Correo electrónico
@@ -113,17 +128,14 @@ function InviteDialog({ centers }: { centers: CenterDoc[] }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nombre@empresa.com"
+              placeholder="ana@empresa.com"
             />
           </div>
           <div className="grid gap-2">
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
               Rol
             </Label>
-            <Select
-              value={role}
-              onValueChange={(v) => setRole(v as typeof role)}
-            >
+            <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
               <SelectTrigger className="rounded-sm">
                 <SelectValue />
               </SelectTrigger>
@@ -181,7 +193,7 @@ function InviteDialog({ centers }: { centers: CenterDoc[] }) {
 }
 
 // ---------------------------------------------------------------------------
-// Edit user dialog (role + centers)
+// Edit user dialog (name, role, centers)
 // ---------------------------------------------------------------------------
 
 function EditUserDialog({
@@ -196,6 +208,7 @@ function EditUserDialog({
   const updateUser = useMutation(api.access.updateUser);
   const setUserCenters = useMutation(api.access.setUserCenters);
   const [open, setOpen] = useState(false);
+  const [name, setName] = useState(target.name ?? "");
   const [role, setRole] = useState<"admin" | "user">(
     target.role === ROLES.ADMIN ? "admin" : "user",
   );
@@ -203,6 +216,14 @@ function EditUserDialog({
     (target.workCenterIds ?? []) as string[],
   );
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setName(target.name ?? "");
+      setRole(target.role === ROLES.ADMIN ? "admin" : "user");
+      setCenterIds((target.workCenterIds ?? []) as string[]);
+    }
+  }, [open, target]);
 
   const toggleCenter = (id: string) => {
     setCenterIds((prev) =>
@@ -213,9 +234,11 @@ function EditUserDialog({
   const submit = async () => {
     setBusy(true);
     try {
-      if (role !== (target.role === ROLES.ADMIN ? "admin" : "user")) {
-        await updateUser({ userId: target._id, role });
-      }
+      await updateUser({
+        userId: target._id,
+        name: name.trim() || undefined,
+        role: role as any,
+      });
       await setUserCenters({
         userId: target._id,
         centerIds: centerIds as any,
@@ -250,10 +273,20 @@ function EditUserDialog({
           <DialogDescription>
             {isSelf
               ? "Esta es tu propia cuenta. No puedes quitarte el rol de administrador."
-              : "Ajusta el rol y los centros de trabajo asignados."}
+              : "Modifica los datos, el rol y los centros de trabajo asignados."}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-2">
+          <div className="grid gap-2">
+            <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
+              Nombre
+            </Label>
+            <Input
+              className="rounded-sm"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
           <div className="grid gap-2">
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
               Rol
@@ -314,6 +347,92 @@ function EditUserDialog({
 }
 
 // ---------------------------------------------------------------------------
+// Row actions: block / delete
+// ---------------------------------------------------------------------------
+
+function BlockButton({
+  target,
+  isSelf,
+}: {
+  target: UserRow;
+  isSelf: boolean;
+}) {
+  const setUserBlocked = useMutation(api.access.setUserBlocked);
+  const [busy, setBusy] = useState(false);
+  const isBlocked = target.blocked === true;
+
+  const handle = async () => {
+    setBusy(true);
+    try {
+      await setUserBlocked({ userId: target._id, blocked: !isBlocked });
+      toast.success(isBlocked ? "Usuario desbloqueado." : "Usuario bloqueado.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="font-ui h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+      onClick={handle}
+      disabled={busy || isSelf}
+      title={isSelf ? "No puedes bloquear tu propia cuenta" : undefined}
+    >
+      {isBlocked ? (
+        <>
+          <UserRoundCheck className="size-3.5" />
+          Desbloquear
+        </>
+      ) : (
+        <>
+          <Ban className="size-3.5" />
+          Bloquear
+        </>
+      )}
+    </Button>
+  );
+}
+
+function DeleteUserButton({ target }: { target: UserRow }) {
+  const deleteUser = useMutation(api.access.deleteUser);
+  const [busy, setBusy] = useState(false);
+
+  const confirmAndDelete = async () => {
+    if (
+      !window.confirm(
+        `¿Eliminar la cuenta de ${target.name || target.email}? Esta acción no se puede deshacer.`,
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      await deleteUser({ userId: target._id });
+      toast.success("Cuenta eliminada.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al eliminar.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="font-ui h-8 px-2 text-xs text-destructive hover:text-destructive"
+      onClick={confirmAndDelete}
+      disabled={busy}
+    >
+      <Trash2 className="size-3.5" />
+    </Button>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Section
 // ---------------------------------------------------------------------------
 
@@ -342,7 +461,8 @@ export function UsuariosSection() {
           <p className="kicker">Personas</p>
           <h2 className="font-display mt-2 text-3xl font-semibold">Usuarios</h2>
           <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-            Añade usuarios por correo, asigna roles y centros de trabajo.
+            Añade usuarios con su nombre, rol y centros. Bloquea o elimina
+            cuentas cuando haga falta.
           </p>
         </div>
         <InviteDialog centers={centers ?? []} />
@@ -366,11 +486,7 @@ export function UsuariosSection() {
                 )}
               >
                 <div className="flex items-center gap-3">
-                  {inv.status === "accepted" ? (
-                    <MailCheck className="size-4 text-muted-foreground" />
-                  ) : (
-                    <MailX className="size-4 text-muted-foreground" />
-                  )}
+                  <Mail className="size-4 text-muted-foreground" />
                   <span className="text-sm">{inv.email}</span>
                   <Badge
                     variant="outline"
@@ -398,9 +514,7 @@ export function UsuariosSection() {
         <h3 className="font-ui flex items-center gap-2 text-sm font-medium">
           <Users className="size-4 text-muted-foreground" />
           Cuentas
-          <span className="text-muted-foreground">
-            ({(users ?? []).length})
-          </span>
+          <span className="text-muted-foreground">({(users ?? []).length})</span>
         </h3>
 
         {!users ? (
@@ -413,6 +527,7 @@ export function UsuariosSection() {
           <div className="mt-3 overflow-hidden rounded-sm border border-border">
             {users.map((u, idx) => {
               const isSelf = me?._id === u._id;
+              const isBlocked = u.blocked === true;
               const assigned = (u.workCenterIds ?? [])
                 .map((id) => (centers ?? []).find((c) => c._id === id)?.name)
                 .filter(Boolean) as string[];
@@ -422,6 +537,7 @@ export function UsuariosSection() {
                   className={cn(
                     "flex flex-col gap-3 bg-card p-4 sm:flex-row sm:items-center sm:justify-between",
                     idx > 0 && "border-t border-border",
+                    isBlocked && "bg-muted/40",
                   )}
                 >
                   <div className="flex items-start gap-3">
@@ -434,7 +550,12 @@ export function UsuariosSection() {
                     </div>
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-sm font-medium">
+                        <span
+                          className={cn(
+                            "text-sm font-medium",
+                            isBlocked && "line-through decoration-muted-foreground/50",
+                          )}
+                        >
                           {u.name || u.email || "Sin nombre"}
                         </span>
                         <Badge
@@ -443,6 +564,14 @@ export function UsuariosSection() {
                         >
                           {u.role === ROLES.ADMIN ? "Administrador" : "Usuario"}
                         </Badge>
+                        {isBlocked && (
+                          <Badge
+                            variant="outline"
+                            className="font-ui rounded-sm border-destructive/40 text-[10px] uppercase tracking-wider text-destructive"
+                          >
+                            Bloqueado
+                          </Badge>
+                        )}
                         {isSelf && (
                           <span className="font-ui text-[11px] text-muted-foreground">
                             (tú)
@@ -455,11 +584,15 @@ export function UsuariosSection() {
                       </p>
                     </div>
                   </div>
-                  <EditUserDialog
-                    target={u as UserRow}
-                    centers={centers ?? []}
-                    isSelf={isSelf}
-                  />
+                  <div className="flex items-center gap-1">
+                    <EditUserDialog
+                      target={u as UserRow}
+                      centers={centers ?? []}
+                      isSelf={isSelf}
+                    />
+                    <BlockButton target={u as UserRow} isSelf={isSelf} />
+                    {!isSelf && <DeleteUserButton target={u as UserRow} />}
+                  </div>
                 </div>
               );
             })}

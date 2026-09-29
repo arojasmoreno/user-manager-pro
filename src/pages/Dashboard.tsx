@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { BlockedAccount } from "@/components/BlockedAccount";
 import { FichasSection } from "@/components/FichasSection";
 import { CentrosSection } from "@/components/CentrosSection";
 import { UsuariosSection } from "@/components/UsuariosSection";
@@ -69,7 +70,7 @@ function BootstrapPromoDialog() {
           </DialogTitle>
           <DialogDescription>
             Esta es la primera cuenta en entrar. Puedes convertirla en la
-            cuenta administradora principal de Vadeos.
+            cuenta administradora principal de User Manager Pro.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -108,6 +109,12 @@ export default function Dashboard() {
       setTab("fichas");
     }
   }, [isAdmin, tab]);
+
+  // Administrators can block accounts; blocked users see this screen instead
+  // of the workspace.
+  if (user?.blocked === true) {
+    return <BlockedAccount />;
+  }
 
   return (
     <WorkspaceShell tab={tab} onTabChange={setTab}>

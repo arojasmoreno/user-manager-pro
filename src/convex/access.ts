@@ -16,6 +16,9 @@ export async function requireAdmin(ctx: QueryCtx | MutationCtx) {
     throw new Error("Necesitas iniciar sesión.");
   }
   const user = await ctx.db.get(userId);
+  if (user?.blocked === true) {
+    throw new Error("Tu cuenta ha sido bloqueada por un administrador.");
+  }
   if (user?.role !== ROLES.ADMIN) {
     throw new Error("Solo los administradores pueden realizar esta acción.");
   }
@@ -30,6 +33,9 @@ export async function requireUser(ctx: QueryCtx | MutationCtx) {
   const user = await ctx.db.get(userId);
   if (user === null) {
     throw new Error("Usuario no encontrado.");
+  }
+  if (user.blocked === true) {
+    throw new Error("Tu cuenta ha sido bloqueada por un administrador.");
   }
   return user;
 }
@@ -74,6 +80,7 @@ export const listUsers = query({
       email: v.optional(v.string()),
       role: v.optional(roleValidator),
       workCenterIds: v.array(v.id("workCenters")),
+      blocked: v.optional(v.boolean()),
       _creationTime: v.number(),
     }),
   ),
@@ -86,6 +93,7 @@ export const listUsers = query({
       email: u.email,
       role: u.role,
       workCenterIds: u.workCenterIds ?? [],
+      blocked: u.blocked,
       _creationTime: u._creationTime,
     }));
   },
@@ -191,6 +199,53 @@ export const promoteToAdmin = mutation({
   },
 });
 
+/**
+ * Block or unblock a user. A blocked user cannot sign in; their data and
+ * center assignments remain intact while blocked.
+ */
+export const setUserBlocked = mutation({
+  args: { userId: v.id("users"), blocked: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const me = await requireAdmin(ctx);
+    if (args.userId === me._id) {
+      throw new Error("No puedes bloquear tu propia cuenta.");
+    }
+    await ctx.db.patch(args.userId, { blocked: args.blocked });
+    return null;
+  },
+});
+
+/** Permanently delete a user account (admin action). */
+export const deleteUser = mutation({
+  args: { userId: v.id("users") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const me = await requireAdmin(ctx);
+    if (args.userId === me._id) {
+      throw new Error("No puedes eliminar tu propia cuenta.");
+    }
+    const target = await ctx.db.get(args.userId);
+    if (target === null) return null;
+    if (target.role === ROLES.ADMIN) {
+      const otherAdmin = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("role"), ROLES.ADMIN))
+        .filter((q) => q.neq(q.field("_id"), args.userId))
+        .first();
+      if (otherAdmin === null) {
+        throw new Error("No puedes eliminar al último administrador.");
+      }
+    }
+    // Detach the user from any work centers before deleting.
+    if ((target.workCenterIds ?? []).length > 0) {
+      await ctx.db.patch(args.userId, { workCenterIds: [] });
+    }
+    await ctx.db.delete(args.userId);
+    return null;
+  },
+});
+
 // ---------------------------------------------------------------------------
 // Mutations — work centers
 // ---------------------------------------------------------------------------
@@ -258,6 +313,7 @@ export const deleteCenter = mutation({
 export const inviteUser = mutation({
   args: {
     email: v.string(),
+    name: v.optional(v.string()),
     role: roleValidator,
     centerIds: v.array(v.id("workCenters")),
   },
@@ -276,7 +332,11 @@ export const inviteUser = mutation({
 
     if (existing !== null && existing.status === "pending") {
       // Update the pending invite with the latest role/center configuration.
-      await ctx.db.patch(existing._id, { role: args.role, centerIds: args.centerIds });
+      await ctx.db.patch(existing._id, {
+        role: args.role,
+        centerIds: args.centerIds,
+        ...(args.name !== undefined ? { name: args.name.trim() || undefined } : null),
+      });
       return { inviteId: existing._id, created: false };
     }
 
@@ -286,6 +346,7 @@ export const inviteUser = mutation({
 
     const inviteId = await ctx.db.insert("invites", {
       email,
+      ...(args.name !== undefined ? { name: args.name.trim() || undefined } : null),
       role: args.role,
       centerIds: args.centerIds,
       status: "pending",
