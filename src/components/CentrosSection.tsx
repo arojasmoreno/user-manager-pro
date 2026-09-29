@@ -1,5 +1,5 @@
 import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { ErrorState } from "@/components/ErrorState";
 import { useSafeQuery } from "@/hooks/use-safe-query";
 import { Button } from "@/components/ui/button";
@@ -124,7 +124,7 @@ function CreateCenterDialog() {
   );
 }
 
-function DeleteCenterButton({ centerId }: { centerId: string }) {
+function DeleteCenterButton({ centerId }: { centerId: Id<"workCenters"> }) {
   const remove = useMutation(api.access.deleteCenter);
   const [busy, setBusy] = useState(false);
 
@@ -137,7 +137,7 @@ function DeleteCenterButton({ centerId }: { centerId: string }) {
       return;
     setBusy(true);
     try {
-      await remove({ centerId: centerId as any });
+      await remove({ centerId });
       toast.success("Centro eliminado.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al eliminar.");
@@ -167,9 +167,9 @@ export function CentrosSection() {
 
   const queryError = centers.error ?? users.error ?? fichas.error ?? null;
 
-  const userCount = (centerId: string) =>
+  const userCount = (centerId: Id<"workCenters">) =>
     (users.data ?? []).filter((u) =>
-      (u.workCenterIds ?? []).includes(centerId as any),
+      (u.workCenterIds ?? []).includes(centerId),
     ).length;
 
   const fichaCount = (center: Doc<"workCenters">) =>

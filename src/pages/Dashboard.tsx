@@ -19,26 +19,20 @@ import {
 import { ROLES } from "@/lib/roles";
 import { useAuth } from "@/hooks/use-auth";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 function BootstrapPromoDialog() {
   const me = useQuery(api.users.currentUser, {});
   const claim = useMutation(api.access.consumeBootstrapPromo);
-  const [show, setShow] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  useEffect(() => {
-    if (me && me.role === undefined && !dismissed) {
-      setShow(true);
-    }
-    if (me && me.role !== undefined) {
-      setShow(false);
-    }
-  }, [me, dismissed]);
-
-  if (!me || me.role !== undefined) return null;
+  // Derived, not synced with an effect: the dialog only applies while the
+  // current user still has no role assigned.
+  const eligible = !!me && me.role === undefined;
+  if (!eligible) return null;
+  const show = !dismissed;
 
   const accept = async () => {
     setClaiming(true);
@@ -49,7 +43,7 @@ function BootstrapPromoDialog() {
       }
     } finally {
       setClaiming(false);
-      setShow(false);
+      setDismissed(true);
     }
   };
 
@@ -59,7 +53,6 @@ function BootstrapPromoDialog() {
       onOpenChange={(o) => {
         if (!o) {
           setDismissed(true);
-          setShow(false);
         }
       }}
     >
@@ -77,10 +70,7 @@ function BootstrapPromoDialog() {
           <Button
             variant="outline"
             className="font-ui rounded-sm"
-            onClick={() => {
-              setDismissed(true);
-              setShow(false);
-            }}
+            onClick={() => setDismissed(true)}
             disabled={claiming}
           >
             No, gracias
@@ -103,12 +93,9 @@ export default function Dashboard() {
   const isAdmin = user?.role === ROLES.ADMIN;
   const [tab, setTab] = useState<WorkspaceTab>("fichas");
 
-  // Non-admins only ever see Fichas; if the tab somehow changes, snap back.
-  useEffect(() => {
-    if (!isAdmin && tab !== "fichas") {
-      setTab("fichas");
-    }
-  }, [isAdmin, tab]);
+  // Non-admins only ever see Fichas, so clamp the tab during render instead of
+  // syncing it back with an effect.
+  const activeTab: WorkspaceTab = isAdmin ? tab : "fichas";
 
   // Administrators can block accounts; blocked users see this screen instead
   // of the workspace.
@@ -117,11 +104,11 @@ export default function Dashboard() {
   }
 
   return (
-    <WorkspaceShell tab={tab} onTabChange={setTab}>
+    <WorkspaceShell tab={activeTab} onTabChange={setTab}>
       <BootstrapPromoDialog />
-      {tab === "fichas" && <FichasSection />}
-      {isAdmin && tab === "centros" && <CentrosSection />}
-      {isAdmin && tab === "usuarios" && <UsuariosSection />}
+      {activeTab === "fichas" && <FichasSection />}
+      {isAdmin && activeTab === "centros" && <CentrosSection />}
+      {isAdmin && activeTab === "usuarios" && <UsuariosSection />}
     </WorkspaceShell>
   );
 }
