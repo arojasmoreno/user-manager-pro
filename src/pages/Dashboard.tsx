@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { BlockedAccount } from "@/components/BlockedAccount";
 import { FichasSection } from "@/components/FichasSection";
+import { AsistenteSection } from "@/components/AsistenteSection";
 import { CentrosSection } from "@/components/CentrosSection";
 import { UsuariosSection } from "@/components/UsuariosSection";
 import {
@@ -107,6 +108,7 @@ export default function Dashboard() {
     <WorkspaceShell tab={activeTab} onTabChange={setTab}>
       <BootstrapPromoDialog />
       {activeTab === "fichas" && <FichasSection />}
+      {activeTab === "asistente" && <AsistenteSection />}
       {isAdmin && activeTab === "centros" && <CentrosSection />}
       {isAdmin && activeTab === "usuarios" && <UsuariosSection />}
     </WorkspaceShell>
