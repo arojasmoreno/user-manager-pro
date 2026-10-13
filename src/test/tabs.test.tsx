@@ -62,7 +62,7 @@ const FICHAS = [
     _id: "f1",
     _creationTime: 3,
     title: "Detergente desinfectante",
-    kind: "ficha_tecnica" as const,
+    kind: "ficha_tecnica",
     productName: "Hypofoam",
     manufacturer: "Diversey",
     url: "https://example.com/a.pdf",
@@ -73,12 +73,57 @@ const FICHAS = [
     _id: "f2",
     _creationTime: 4,
     title: "Manual de máquina",
-    kind: "manual_instrucciones" as const,
+    kind: "manual_instrucciones",
     productName: undefined,
     manufacturer: undefined,
     url: "https://example.com/b.pdf",
     workCenterIds: ["c2"],
     active: true,
+  },
+];
+
+/**
+ * Catálogo con una ficha de un tipo creado por el administrador. Vive aparte
+ * de `FICHAS` para no alterar los recuentos por centro de la pestaña Centros.
+ */
+const FICHAS_CON_PERMISO = [
+  ...FICHAS,
+  {
+    _id: "f3",
+    _creationTime: 8,
+    title: "Trabajo en caliente",
+    kind: "permiso_trabajo",
+    productName: undefined,
+    manufacturer: undefined,
+    url: "https://example.com/c.pdf",
+    workCenterIds: ["c1"],
+    active: true,
+  },
+];
+
+/** Tipos de ficha: uno de serie y otro creado por el administrador. */
+const TYPES = [
+  {
+    _id: "t1",
+    _creationTime: 6,
+    slug: "ficha_tecnica",
+    name: "Ficha técnica",
+    icon: "file-text",
+    order: 10,
+    builtIn: true,
+    hidden: false,
+    fichaCount: 1,
+  },
+  {
+    _id: "t2",
+    _creationTime: 7,
+    slug: "permiso_trabajo",
+    name: "Permiso de trabajo",
+    icon: "clipboard-list",
+    order: 50,
+    builtIn: false,
+    hidden: false,
+    fichaCount: 1,
   },
 ];
 
@@ -101,14 +146,20 @@ function renderTab(node: React.ReactElement) {
   return render(<MemoryRouter>{node}</MemoryRouter>);
 }
 
-/** FichasSection (admin): listMine, listAll, listCenters, listMyCenters(saltada). */
-function queueFichasAdmin() {
-  h.queue = [ok(FICHAS), ok(FICHAS), ok(CENTERS), pending];
+/**
+ * FichasSection (admin) consulta en este orden: listMine, listAll, listCenters,
+ * listMyCenters (saltada), listTypes (saltada) y listTypesAdmin.
+ */
+function queueFichasAdmin(fichas: unknown = FICHAS) {
+  h.queue = [ok(fichas), ok(fichas), ok(CENTERS), pending, pending, ok(TYPES)];
 }
 
-/** FichasSection (usuario): listMine, y el resto saltadas salvo listMyCenters. */
+/**
+ * FichasSection (usuario): listMine, listMyCenters y listTypes; el resto van
+ * saltadas por ser de administrador.
+ */
 function queueFichasUser() {
-  h.queue = [ok([]), pending, pending, ok([])];
+  h.queue = [ok([]), pending, pending, ok([]), ok(TYPES), pending];
 }
 
 /** CentrosSection: listCenters, listUsers, listAll. */
@@ -154,6 +205,22 @@ describe("pestaña Fichas", () => {
     queueFichasAdmin();
     renderTab(<FichasSection />);
     expect(screen.getAllByText("Manual de máquina").length).toBeGreaterThan(0);
+  });
+
+  test("ofrece los tipos del catálogo, incluidos los creados por el administrador", () => {
+    queueFichasAdmin(FICHAS_CON_PERMISO);
+    renderTab(<FichasSection />);
+
+    // El tipo propio aparece como filtro y como etiqueta de su ficha.
+    expect(screen.getAllByText("Permiso de trabajo").length).toBeGreaterThan(1);
+    expect(screen.getByText("Trabajo en caliente")).toBeTruthy();
+  });
+
+  test("el administrador puede abrir la gestión de tipos de ficha", () => {
+    queueFichasAdmin();
+    renderTab(<FichasSection />);
+
+    expect(screen.getByText("Tipos de ficha")).toBeTruthy();
   });
 
   test("muestra la pantalla de error si la consulta de fichas falla", () => {

@@ -49,17 +49,27 @@ const schema = defineSchema(
       address: v.string(),
     }).index("code", ["code"]),
 
-    // Catalog items: fichas técnicas, fichas de seguridad, manuales de
-    // máquina e instrucciones de trabajo. Each belongs to one or more work
-    // centers and points at a document (URL or Supabase storage path).
+    // Ficha types ("tipos de ficha"). The four classic types are not rows:
+    // `mergeFichaTypes` folds them in on read, so a database that already has
+    // fichas with the old literal kinds keeps working without a migration. A
+    // row with a classic slug overrides it; `hidden: true` retires it.
+    fichaTypes: defineTable({
+      slug: v.string(),
+      name: v.string(),
+      icon: v.string(),
+      order: v.number(),
+      hidden: v.optional(v.boolean()),
+    }).index("slug", ["slug"]),
+
+    // Catalog items: technical sheets, safety sheets, machine manuals and work
+    // instructions — plus any type the administrator adds. `kind` stores the
+    // slug of a row in `fichaTypes`; `fichas.create` and `fichas.update` reject
+    // slugs that are not a visible type. It is a plain string (instead of a
+    // union) so new types do not require a schema change. Each ficha belongs to
+    // one or more work centers and points at a document (URL or Supabase path).
     fichas: defineTable({
       title: v.string(),
-      kind: v.union(
-        v.literal("ficha_tecnica"),
-        v.literal("ficha_seguridad"),
-        v.literal("manual_instrucciones"),
-        v.literal("instrucciones_trabajo"),
-      ),
+      kind: v.string(),
       /** Product or equipment the sheet refers to (optional). */
       productName: v.optional(v.string()),
       manufacturer: v.optional(v.string()),

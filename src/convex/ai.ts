@@ -9,14 +9,9 @@ import {
   buildCatalogContext,
   rankByKeyword,
   toSources,
-  FICHA_KINDS,
-  type FichaKind,
   type FichaLike,
 } from "./assistant";
-
-const kindValidator = v.union(
-  ...FICHA_KINDS.map((k) => v.literal(k)),
-);
+import { fichaKindValidator } from "./fichaTypes";
 
 /**
  * Explicit shape of the internal query result. Written out (instead of inferred)
@@ -29,7 +24,8 @@ type CatalogResult = {
   fichas: {
     _id: Id<"fichas">;
     title: string;
-    kind: FichaKind;
+    kind: string;
+    kindName: string;
     productName?: string;
     manufacturer?: string;
     url: string;
@@ -58,7 +54,8 @@ export const askFichaQuestion = action({
       v.object({
         _id: v.id("fichas"),
         title: v.string(),
-        kind: kindValidator,
+        kind: fichaKindValidator,
+        kindLabel: v.string(),
         url: v.string(),
         centerNames: v.array(v.string()),
       }),
@@ -79,6 +76,7 @@ export const askFichaQuestion = action({
       _id: f._id,
       title: f.title,
       kind: f.kind,
+      kindLabel: f.kindName,
       productName: f.productName,
       manufacturer: f.manufacturer,
       url: f.url,
