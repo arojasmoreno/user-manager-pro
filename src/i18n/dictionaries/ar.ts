@@ -76,9 +76,9 @@ export const ar: Record<string, string> = {
   "Usuarios con nombre, rol y centro": "مستخدمين بالاسم والدور والمركز",
   "De cada usuario se gestionan su nombre, su centro de trabajo y su rol. Los administradores añaden, bloquean, eliminan y modifican cuentas.":
     "من كل مستخدم كتسير الاسم ومركز الخدمة والدور. المسؤولين كيزيدو وكحجبو وكحيّدو وكيبدلو الحسابات.",
-  "Cuatro tipos de documento": "أربعة أنواع ديال الوثائق",
-  "Fichas técnicas, fichas de seguridad, manuales de instrucciones e instrucciones de trabajo, siempre asignados a un centro.":
-    "بطاقات تقنية، بطاقات سلامة، كتيڤ ديال التعليمات وتعليمات ديال العمل، ديما مرتبطة بمركز.",
+  "Tipos de documento a medida": "أنواع الوثائق حسب الطلب",
+  "Fichas técnicas, de seguridad, manuales e instrucciones de trabajo, más los tipos que cree tu administrador. Siempre asignados a un centro.":
+    "بطاقات تقنية، بطاقات سلامة، كتيڤ ديال التعليمات وتعليمات ديال العمل، وزيد الأنواع اللي كيزيد المسؤول. ديما مرتبطة بمركز.",
   "Cada usuario solo ve las fichas de sus centros. Los administradores ven y gestionan todo el catálogo.":
     "كل مستخدم كيلقى غير البطاقات ديال المراكز ديالو. المسؤولين كيلقاو ويسيرو الكتالوج كامل.",
   "Cómo funciona": "كيفاش خدام",

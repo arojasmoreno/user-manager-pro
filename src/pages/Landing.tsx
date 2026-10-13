@@ -120,11 +120,12 @@ export default function Landing() {
             <div className="bg-card p-8">
               <FileText className="size-5 text-muted-foreground" />
               <h3 className="font-ui mt-4 text-sm font-semibold">
-                Cuatro tipos de documento
+                Tipos de documento a medida
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Fichas técnicas, fichas de seguridad, manuales de instrucciones
-                e instrucciones de trabajo, siempre asignados a un centro.
+                Fichas técnicas, de seguridad, manuales e instrucciones de
+                trabajo, más los tipos que cree tu administrador. Siempre
+                asignados a un centro.
               </p>
             </div>
             <div className="bg-card p-8">

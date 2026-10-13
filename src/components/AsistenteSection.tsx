@@ -17,6 +17,8 @@ type Source = {
   _id: string;
   title: string;
   kind: string;
+  /** Nombre del tipo tal y como lo definió el administrador. */
+  kindLabel: string;
   url: string;
   centerNames: string[];
 };
@@ -28,13 +30,6 @@ type Turn = {
   sources?: Source[];
   error?: string;
   pending?: boolean;
-};
-
-const KIND_LABELS: Record<string, string> = {
-  ficha_tecnica: "Ficha técnica",
-  ficha_seguridad: "Ficha de seguridad",
-  manual_instrucciones: "Manual de máquina",
-  instrucciones_trabajo: "Instrucción de trabajo",
 };
 
 const SUGGESTIONS = [
@@ -170,7 +165,7 @@ export function AsistenteSection() {
                                   {s.title}
                                 </span>
                                 <span className="font-ui text-[11px] text-muted-foreground">
-                                  {KIND_LABELS[s.kind] ?? s.kind}
+                                  {s.kindLabel ?? s.kind}
                                   {s.centerNames.length > 0
                                     ? ` · ${s.centerNames.join(", ")}`
                                     : ""}

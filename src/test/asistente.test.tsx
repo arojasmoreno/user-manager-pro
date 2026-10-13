@@ -21,6 +21,7 @@ const RESULT = {
       _id: "f1",
       title: "Detergente desinfectante",
       kind: "ficha_tecnica",
+      kindLabel: "Ficha técnica",
       url: "https://example.com/a.pdf",
       centerNames: ["MDLZ Montornes"],
     },
