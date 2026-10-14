@@ -180,6 +180,27 @@ export const upsert = internalMutation({
   handler: async (ctx, args) => await upsertTranslation(ctx, args),
 });
 
+/**
+ * El administrador retira una traducción: la ficha vuelve a mostrarse en el
+ * idioma original para ese idioma.
+ */
+export const deleteTranslation = mutation({
+  args: { fichaId: v.id("fichas"), locale: localeValidator },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const rows = await ctx.db
+      .query("fichaTranslations")
+      .filter((q) => q.eq(q.field("fichaId"), args.fichaId))
+      .filter((q) => q.eq(q.field("locale"), args.locale))
+      .collect();
+    for (const row of rows) {
+      await ctx.db.delete(row._id);
+    }
+    return null;
+  },
+});
+
 /** Administrator writes or corrects a translation by hand. */
 export const saveTranslation = mutation({
   args: {

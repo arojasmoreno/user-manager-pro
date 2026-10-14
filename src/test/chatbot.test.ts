@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import { convexTest } from "convex-test";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import schema from "@/convex/schema";
@@ -7,16 +8,18 @@ import {
   __reset,
   __setFailure,
   __setReply,
-} from "./fakes/fakeGemini";
+} from "./fakes/fakeAi";
 
-// The assistant imports the Gemini client by relative path, so the stub has to
+// The assistant imports the AI client by relative path, so the stub has to
 // intercept the module itself rather than the convex-test module map (which
 // only registers functions, it does not rewrite their imports).
-vi.mock("@/convex/gemini", async () => {
-  const fake = await import("@/test/fakes/fakeGemini");
+vi.mock("@/convex/aiClient", async () => {
+  const fake = await import("@/test/fakes/fakeAi");
   return {
     answerFromContext: fake.answerFromContext,
+    answerLanguageFor: fake.answerLanguageFor,
     AiNotConfiguredError: fake.AiNotConfiguredError,
+    userFacingAiError: fake.userFacingAiError,
   };
 });
 
@@ -182,6 +185,25 @@ describe("ai.askFichaQuestion (asistente)", () => {
     expect(calls).toHaveLength(0);
   });
 
+  test("responde en el idioma activo de la interfaz", async () => {
+    const { admin } = await seed(setup());
+
+    await admin.action(api.ai.askFichaQuestion, {
+      question: "Quel désinfectant utilise-t-on ?",
+      locale: "fr-FR",
+    });
+
+    expect(calls[0].language).toEqual({ code: "fr-FR", name: "Français" });
+  });
+
+  test("en español (idioma de las fichas) no fuerza ningún idioma", async () => {
+    const { admin } = await seed(setup());
+
+    await admin.action(api.ai.askFichaQuestion, { question: "¿Qué hay?" });
+
+    expect(calls[0].language).toBeUndefined();
+  });
+
   test("no llama a la IA si la pregunta está vacía", async () => {
     const { admin } = await seed(setup());
     await expect(
@@ -217,6 +239,36 @@ describe("ai.askFichaQuestion (asistente)", () => {
     await expect(
       admin.action(api.ai.askFichaQuestion, { question: "¿Qué hay?" }),
     ).rejects.toThrow(/clave de la IA/);
+  });
+
+  test("el fallo viaja como ConvexError, que Convex no redacta en producción", async () => {
+    const { admin } = await seed(setup());
+    __setFailure(new Error("El asistente necesita la clave de la IA."));
+
+    const failed = admin.action(api.ai.askFichaQuestion, {
+      question: "¿Qué hay?",
+    });
+
+    // Un `Error` corriente llega al navegador como «Server Error Called by
+    // client»: el motivo real solo sobrevive dentro de un ConvexError.
+    await expect(failed).rejects.toBeInstanceOf(ConvexError);
+    await expect(failed).rejects.toHaveProperty(
+      "data",
+      expect.stringContaining("clave de la IA"),
+    );
+  });
+
+  test("la pregunta vacía también llega como ConvexError", async () => {
+    const { admin } = await seed(setup());
+
+    const failed = admin.action(api.ai.askFichaQuestion, { question: "   " });
+
+    await expect(failed).rejects.toBeInstanceOf(ConvexError);
+    await expect(failed).rejects.toHaveProperty(
+      "data",
+      expect.stringMatching(/pregunta/i),
+    );
+    expect(calls).toHaveLength(0);
   });
 
   test("las fichas inactivas no llegan al modelo", async () => {

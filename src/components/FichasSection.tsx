@@ -1,8 +1,10 @@
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { ErrorState } from "@/components/ErrorState";
+import { FichaTranslations } from "@/components/FichaTranslations";
 import { FichaTypesDialog } from "@/components/FichaTypesDialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useFichaTranslations } from "@/hooks/use-ficha-translations";
 import { useSafeQuery } from "@/hooks/use-safe-query";
 import { ROLES } from "@/lib/roles";
 import { isSupabaseConfigured, supabase, FICHAS_BUCKET } from "@/lib/supabase";
@@ -439,14 +441,14 @@ function EditFichaDialog({
           Editar
         </Button>
       </DialogTrigger>
-      <DialogContent className="rounded-sm bg-card sm:max-w-md">
+      <DialogContent className="rounded-sm bg-card sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
             Editar ficha
           </DialogTitle>
           <DialogDescription>{labelOf(ficha.kind, types)}</DialogDescription>
         </DialogHeader>
-        <div className="grid max-h-[65vh] gap-4 overflow-y-auto py-2 pr-1">
+        <div className="grid max-h-[70vh] gap-4 overflow-y-auto py-2 pr-1">
           <div className="grid gap-2">
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
               Título
@@ -512,6 +514,9 @@ function EditFichaDialog({
               onToggle={toggleCenter}
             />
           </div>
+
+          {/* Solo pide las traducciones cuando el diálogo está abierto. */}
+          <FichaTranslations fichaId={ficha._id} enabled={open} />
         </div>
         <DialogFooter>
           <Button
@@ -582,6 +587,9 @@ export function FichasSection() {
     api.fichaTypes.listTypesAdmin,
     isAdmin ? {} : "skip",
   );
+  // Las fichas se muestran en el idioma activo; lo que no esté traducido se ve
+  // tal y como lo escribió el administrador, en español.
+  const translateFicha = useFichaTranslations();
   const myCenters = isAdmin ? (adminCenters.data ?? []) : (myCentersData.data ?? []);
 
   const queryError =
@@ -615,11 +623,16 @@ export function FichasSection() {
     if (filter !== "all" && f.kind !== filter) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return (
-      f.title.toLowerCase().includes(q) ||
-      (f.productName ?? "").toLowerCase().includes(q) ||
-      (f.manufacturer ?? "").toLowerCase().includes(q)
-    );
+    // Se busca en los dos idiomas: el de la persona y el original.
+    const shown = translateFicha(f);
+    return [
+      f.title,
+      f.productName,
+      f.manufacturer,
+      shown.title,
+      shown.productName,
+      shown.manufacturer,
+    ].some((value) => (value ?? "").toLowerCase().includes(q));
   });
 
   const countOf = (slug: string) =>
@@ -737,6 +750,7 @@ export function FichasSection() {
           {filtered.map((f) => {
             const type = railTypes.find((item) => item.slug === f.kind);
             const Icon = fichaIcon(type?.icon ?? "");
+            const shown = translateFicha(f);
             return (
               <article
                 key={f._id}
@@ -763,12 +777,17 @@ export function FichasSection() {
                 </div>
 
                 <h3 className="font-display mt-4 text-lg leading-snug font-semibold">
-                  {f.title}
+                  {shown.title}
                 </h3>
-                {(f.productName || f.manufacturer) && (
+                {(shown.productName || shown.manufacturer) && (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {f.productName}
-                    {f.manufacturer ? ` · ${f.manufacturer}` : ""}
+                    {shown.productName}
+                    {shown.manufacturer ? ` · ${shown.manufacturer}` : ""}
+                  </p>
+                )}
+                {isAdmin && shown.isFallback && (
+                  <p className="font-ui mt-1 text-[11px] text-muted-foreground/80">
+                    Sin traducir
                   </p>
                 )}
 
