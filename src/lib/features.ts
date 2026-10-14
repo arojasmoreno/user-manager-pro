@@ -1,9 +1,9 @@
 /**
- * Feature switches.
+ * Interruptores de funcionalidad.
  *
- * The assistant answers through the Gemini API, which needs `GOOGLE_API_KEY` in
- * the deployment environment. Until that key exists the tab is hidden instead
- * of showing a chat that can only fail; flip this to `true` once the key is set
- * in the Keys tab.
+ * El asistente responde con la IA del deployment (Google AI Studio o la
+ * pasarela de integración; ver `src/convex/aiClient.ts`). Está activo: si la
+ * clave todavía no está puesta, la propia pantalla lo explica en lugar de
+ * quedarse en blanco, así que no hace falta esconder la pestaña.
  */
-export const ASSISTANT_ENABLED = false;
+export const ASSISTANT_ENABLED = true;

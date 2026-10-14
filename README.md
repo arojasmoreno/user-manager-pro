@@ -29,6 +29,48 @@ The convex server has a separate set of environment variables that are accessibl
 
 Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
 
+### AI (document assistant and sheet translations)
+
+The assistant tab answers questions about the sheet catalogue, and the admin can
+translate a sheet's title, product and manufacturer from the sheet's edit
+dialog. Both features run on the server (Convex actions) and need **one** of
+these two variables in the deployment environment — the first one that is set
+wins:
+
+| Variable | What it is | Where to get it |
+| --- | --- | --- |
+| `GOOGLE_API_KEY` | Google AI Studio key, calls Gemini directly | https://aistudio.google.com/apikey |
+| `VLY_INTEGRATION_KEY` | Platform integration key, calls the AI gateway (any model, no extra account) | the project's Keys tab |
+
+Set it either from the project's **Keys** tab or with the Convex CLI:
+
+```bash
+npx convex env set GOOGLE_API_KEY <your-key>
+# or
+npx convex env set VLY_INTEGRATION_KEY <your-key>
+```
+
+Everything must be deployed before it takes effect (`npx convex dev` while
+developing, `npx convex deploy` for production).
+
+Optional overrides:
+
+- `GOOGLE_MODEL` (default `gemini-3.8-flash`)
+- `VLY_AI_MODEL` (default `google/gemini-3.8-flash`)
+- `GEMINI_API_KEY` is accepted as an alias of `GOOGLE_API_KEY`
+
+Without any of them the assistant tab stays visible and explains what is
+missing instead of failing silently. The translations are stored one row per
+sheet and language in the `fichaTranslations` table; what is missing falls back
+to the Spanish original.
+
+A live smoke test against the real provider runs only when a key is present in
+the local environment:
+
+```bash
+GOOGLE_API_KEY=<your-key> npx vitest run src/test/chatbot.live.test.ts
+```
+
 
 # Using Authentication (Important!)
 

@@ -228,6 +228,15 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     await ctx.db.delete(args.fichaId);
+    // Las traducciones de la ficha se van con ella: sin esto quedarían filas
+    // huérfanas que ya no se pueden ver ni borrar desde la interfaz.
+    const translations = await ctx.db
+      .query("fichaTranslations")
+      .filter((q) => q.eq(q.field("fichaId"), args.fichaId))
+      .collect();
+    for (const row of translations) {
+      await ctx.db.delete(row._id);
+    }
     return null;
   },
 });
