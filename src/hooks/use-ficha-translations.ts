@@ -29,9 +29,12 @@ export function useFichaTranslations() {
   const { locale } = useI18n();
   const isSource = locale === SOURCE_LOCALE;
 
-  const { data } = useSafeQuery(api.traducciones.listTranslations, {
-    locale,
-  });
+  // En el idioma de origen no hay nada que traer: se salta la suscripción para
+  // no pedir una lista vacía en cada carga del catálogo.
+  const { data } = useSafeQuery(
+    api.traducciones.listTranslations,
+    isSource ? "skip" : { locale },
+  );
 
   const byFicha = new Map<string, TranslatedFields>();
   for (const row of data ?? []) {

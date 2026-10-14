@@ -3,3 +3,4 @@ node_modules
 dist
 src/convex/_generated
 backups/*.zip
+.convex-token

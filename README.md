@@ -29,6 +29,51 @@ The convex server has a separate set of environment variables that are accessibl
 
 Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
 
+### AI (document assistant and sheet translations)
+
+The assistant tab answers questions about the sheet catalogue, and the admin can
+translate a sheet's title, product and manufacturer from the sheet's edit
+dialog. Both features run on the server (Convex actions) and need **one** of
+these two variables in the deployment environment — the first one that is set
+wins:
+
+| Variable | What it is | Where to get it |
+| --- | --- | --- |
+| `GOOGLE_API_KEY` | Google AI Studio key, calls Gemini directly | https://aistudio.google.com/apikey |
+| `VLY_INTEGRATION_KEY` | Platform integration key, calls the AI gateway (any model, no extra account) | the project's Keys tab |
+
+Set it in the project's **Keys** tab — with this setup that is the only route that
+can work. The deployment the app talks to (`VITE_CONVEX_URL`,
+`gallant-ladybug-133`) belongs to the project the hosting platform owns, not to
+your own Convex team, so `npx convex env set` answers `You don't have access to
+the selected project`. For the same reason
+`npx convex dev` and `npx convex deploy` cannot push these functions from a local
+checkout — the functions reach the deployment when the platform publishes the
+project. (The `CONVEX_DEPLOYMENT` value in `.env.local` is a platform identifier,
+so the CLI cannot even resolve it; it expects a deployment name such as
+`dev:gallant-ladybug-133`, passed with `--env-file`.)
+
+Everything must be deployed before it takes effect: set the key, then publish
+the project so the functions are pushed.
+
+Optional overrides:
+
+- `GOOGLE_MODEL` (default `gemini-3.8-flash`)
+- `VLY_AI_MODEL` (default `google/gemini-3.8-flash`)
+- `GEMINI_API_KEY` is accepted as an alias of `GOOGLE_API_KEY`
+
+Without any of them the assistant tab stays visible and explains what is
+missing instead of failing silently. The translations are stored one row per
+sheet and language in the `fichaTranslations` table; what is missing falls back
+to the Spanish original.
+
+A live smoke test against the real provider runs only when a key is present in
+the local environment:
+
+```bash
+GOOGLE_API_KEY=<your-key> npx vitest run src/test/chatbot.live.test.ts
+```
+
 
 # Using Authentication (Important!)
 

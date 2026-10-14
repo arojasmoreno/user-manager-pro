@@ -79,9 +79,9 @@ export const mnk: Record<string, string> = {
   "Usuarios con nombre, rol y centro": "Mɔgɔ niɲɛɲo, sɔŋoŋa kana kunnafɛrɛn",
   "De cada usuario se gestionan su nombre, su centro de trabajo y su rol. Los administradores añaden, bloquean, eliminan y modifican cuentas.":
     "Mɔgɔ kelenn kan ka bɛ ɲɛw i nɔmɔ, i kunnafɛrɛn kana i sɔŋoŋa. Ɲamarraku yeɲe dɔɔ, sekan, bɔna kulu yɛlɛma kɔntɔw.",
-  "Cuatro tipos de documento": "Dokumɛntu bɔrɔnya yɔrɔ",
-  "Fichas técnicas, fichas de seguridad, manuales de instrucciones e instrucciones de trabajo, siempre asignados a un centro.":
-    "Fisa tekniki, fisa lafiɲi, kɔfɛ wulidi kulu kanamu bɛɛ, diuna kan ka yɛrɛma kunnafɛrɛn kɔrɔ.",
+  "Tipos de documento a medida": "Dokumɛntu yɔrɔw la saŋa",
+  "Fichas técnicas, de seguridad, manuales e instrucciones de trabajo, más los tipos que cree tu administrador. Siempre asignados a un centro.":
+    "Fisa tekniki, fisa lafiɲi, kɔfɛ wulidi kulu kanamu, ani yɔrɔw ƞamarraku yeɲe dɔɔ. Bɛɛ diuna kan ka yɛrɛma kunnafɛrɛn kɔrɔ.",
   "Cada usuario solo ve las fichas de sus centros. Los administradores ven y gestionan todo el catálogo.":
     "Mɔgɔ kelenn yeɲa fisa i nana kunnafɛrɛnw fasa. Ɲamarraku yeɲe kulu kataloɡo la ɲɛw.",
   "Cómo funciona": "A bɛnɛ kaa sɛbɛn",

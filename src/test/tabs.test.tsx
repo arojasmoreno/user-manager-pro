@@ -25,6 +25,7 @@ vi.mock("convex/react", () => ({
     return h.queue[i] ?? { status: "pending" };
   },
   useMutation: () => vi.fn(),
+  useAction: () => vi.fn(),
 }));
 
 let currentUser: { role?: string; name?: string; email?: string } | undefined;
@@ -39,6 +40,7 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { CentrosSection } from "@/components/CentrosSection";
 import { FichasSection } from "@/components/FichasSection";
+import { I18nProvider } from "@/i18n";
 
 const CENTERS = [
   {
@@ -62,7 +64,7 @@ const FICHAS = [
     _id: "f1",
     _creationTime: 3,
     title: "Detergente desinfectante",
-    kind: "ficha_tecnica" as const,
+    kind: "ficha_tecnica",
     productName: "Hypofoam",
     manufacturer: "Diversey",
     url: "https://example.com/a.pdf",
@@ -73,12 +75,57 @@ const FICHAS = [
     _id: "f2",
     _creationTime: 4,
     title: "Manual de máquina",
-    kind: "manual_instrucciones" as const,
+    kind: "manual_instrucciones",
     productName: undefined,
     manufacturer: undefined,
     url: "https://example.com/b.pdf",
     workCenterIds: ["c2"],
     active: true,
+  },
+];
+
+/**
+ * Catálogo con una ficha de un tipo creado por el administrador. Vive aparte
+ * de `FICHAS` para no alterar los recuentos por centro de la pestaña Centros.
+ */
+const FICHAS_CON_PERMISO = [
+  ...FICHAS,
+  {
+    _id: "f3",
+    _creationTime: 8,
+    title: "Trabajo en caliente",
+    kind: "permiso_trabajo",
+    productName: undefined,
+    manufacturer: undefined,
+    url: "https://example.com/c.pdf",
+    workCenterIds: ["c1"],
+    active: true,
+  },
+];
+
+/** Tipos de ficha: uno de serie y otro creado por el administrador. */
+const TYPES = [
+  {
+    _id: "t1",
+    _creationTime: 6,
+    slug: "ficha_tecnica",
+    name: "Ficha técnica",
+    icon: "file-text",
+    order: 10,
+    builtIn: true,
+    hidden: false,
+    fichaCount: 1,
+  },
+  {
+    _id: "t2",
+    _creationTime: 7,
+    slug: "permiso_trabajo",
+    name: "Permiso de trabajo",
+    icon: "clipboard-list",
+    order: 50,
+    builtIn: false,
+    hidden: false,
+    fichaCount: 1,
   },
 ];
 
@@ -94,6 +141,8 @@ const USERS = [
   },
 ];
 
+const TRANSLATIONS: { fichaId: string; locale: string; title: string }[] = [];
+
 const ok = (data: unknown): QueryResult => ({ status: "success", data });
 const pending: QueryResult = { status: "pending" };
 
@@ -101,14 +150,38 @@ function renderTab(node: React.ReactElement) {
   return render(<MemoryRouter>{node}</MemoryRouter>);
 }
 
-/** FichasSection (admin): listMine, listAll, listCenters, listMyCenters(saltada). */
-function queueFichasAdmin() {
-  h.queue = [ok(FICHAS), ok(FICHAS), ok(CENTERS), pending];
+/** Igual, pero dentro del proveedor de idioma, para probar la ficha traducida. */
+function renderTabWithI18n(node: React.ReactElement) {
+  return render(
+    <MemoryRouter>
+      <I18nProvider>{node}</I18nProvider>
+    </MemoryRouter>,
+  );
 }
 
-/** FichasSection (usuario): listMine, y el resto saltadas salvo listMyCenters. */
+/**
+ * FichasSection (admin) consulta en este orden: listMine, listAll, listCenters,
+ * listMyCenters (saltada), listTypes (saltada), listTypesAdmin y, por último,
+ * listTranslations (saltada mientras el idioma activo es el de las fichas).
+ */
+function queueFichasAdmin(fichas: unknown = FICHAS) {
+  h.queue = [
+    ok(fichas),
+    ok(fichas),
+    ok(CENTERS),
+    pending,
+    pending,
+    ok(TYPES),
+    ok(TRANSLATIONS),
+  ];
+}
+
+/**
+ * FichasSection (usuario): listMine, listMyCenters y listTypes; el resto van
+ * saltadas por ser de administrador.
+ */
 function queueFichasUser() {
-  h.queue = [ok([]), pending, pending, ok([])];
+  h.queue = [ok([]), pending, pending, ok([]), ok(TYPES), pending, ok(TRANSLATIONS)];
 }
 
 /** CentrosSection: listCenters, listUsers, listAll. */
@@ -127,6 +200,7 @@ afterEach(() => {
   h.queue = [];
   h.failing.clear();
   currentUser = undefined;
+  window.localStorage.removeItem("doc-manager-locale");
 });
 
 describe("pestaña Fichas", () => {
@@ -154,6 +228,44 @@ describe("pestaña Fichas", () => {
     queueFichasAdmin();
     renderTab(<FichasSection />);
     expect(screen.getAllByText("Manual de máquina").length).toBeGreaterThan(0);
+  });
+
+  test("ofrece los tipos del catálogo, incluidos los creados por el administrador", () => {
+    queueFichasAdmin(FICHAS_CON_PERMISO);
+    renderTab(<FichasSection />);
+
+    // El tipo propio aparece como filtro y como etiqueta de su ficha.
+    expect(screen.getAllByText("Permiso de trabajo").length).toBeGreaterThan(1);
+    expect(screen.getByText("Trabajo en caliente")).toBeTruthy();
+  });
+
+  test("el administrador puede abrir la gestión de tipos de ficha", () => {
+    queueFichasAdmin();
+    renderTab(<FichasSection />);
+
+    expect(screen.getByText("Tipos de ficha")).toBeTruthy();
+  });
+
+  test("muestra la ficha traducida y avisa de las que no lo están", () => {
+    window.localStorage.setItem("doc-manager-locale", "fr-FR");
+    queueFichasAdmin();
+    h.queue[6] = ok([
+      {
+        fichaId: "f1",
+        locale: "fr-FR",
+        title: "Détergent désinfectant",
+        productName: "Hypofoam",
+        manufacturer: "Diversey",
+        source: "manual",
+      },
+    ]);
+    renderTabWithI18n(<FichasSection />);
+
+    expect(screen.getByText("Détergent désinfectant")).toBeTruthy();
+    expect(screen.queryByText("Detergente desinfectante")).toBeNull();
+    // La ficha sin traducir se sigue viendo, con su aviso para el administrador.
+    expect(screen.getAllByText("Manual de máquina").length).toBeGreaterThan(0);
+    expect(screen.getByText("Sin traducir")).toBeTruthy();
   });
 
   test("muestra la pantalla de error si la consulta de fichas falla", () => {
