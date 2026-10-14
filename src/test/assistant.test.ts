@@ -124,10 +124,24 @@ describe("toSources", () => {
         _id: "f2",
         title: "Manual de máquina",
         kind: "manual_instrucciones",
+        kindLabel: "Manual de máquina",
         url: "https://example.com/a.pdf",
         centerNames: ["Granollers"],
       },
     ]);
+  });
+
+  test("usa la etiqueta del tipo que definió el administrador", () => {
+    const sources = toSources(
+      [ficha({ _id: "f9", kind: "permiso_trabajo", kindLabel: "Permiso de trabajo" })],
+      CENTERS,
+    );
+    expect(sources[0].kindLabel).toBe("Permiso de trabajo");
+  });
+
+  test("cae al slug cuando el tipo no tiene etiqueta conocida", () => {
+    const sources = toSources([ficha({ _id: "f9", kind: "raro" })], CENTERS);
+    expect(sources[0].kindLabel).toBe("raro");
   });
 
   test("no inventa centros si el id no existe", () => {

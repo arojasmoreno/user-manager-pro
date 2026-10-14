@@ -209,6 +209,55 @@ describe("traducciones de fichas", () => {
     expect(rows[0].title).toBe("Versión dos");
   });
 
+  test("el administrador quita una traducción", async () => {
+    const { admin, fichaA } = await seed(setup());
+    await admin.mutation(api.traducciones.saveTranslation, {
+      fichaId: fichaA,
+      locale: "fr-FR",
+      title: "Détergent désinfectant",
+    });
+
+    await admin.mutation(api.traducciones.deleteTranslation, {
+      fichaId: fichaA,
+      locale: "fr-FR",
+    });
+
+    expect(
+      await admin.query(api.traducciones.listTranslations, { locale: "fr-FR" }),
+    ).toEqual([]);
+    // El idioma vuelve a contar como pendiente para el asistente de traducción.
+    expect(
+      await admin.query(api.traducciones.missingLocales, { fichaId: fichaA }),
+    ).toContain("fr-FR");
+  });
+
+  test("un usuario no puede quitar traducciones", async () => {
+    const { member, fichaA } = await seed(setup());
+    await expect(
+      member.mutation(api.traducciones.deleteTranslation, {
+        fichaId: fichaA,
+        locale: "fr-FR",
+      }),
+    ).rejects.toThrow(/administradores/i);
+  });
+
+  test("borrar una ficha se lleva sus traducciones", async () => {
+    const t = setup();
+    const { admin, fichaA } = await seed(t);
+    await admin.mutation(api.traducciones.saveTranslation, {
+      fichaId: fichaA,
+      locale: "en-GB",
+      title: "Disinfectant detergent",
+    });
+
+    await admin.mutation(api.fichas.remove, { fichaId: fichaA });
+
+    const left = await t.run(async (ctx) =>
+      await ctx.db.query("fichaTranslations").collect(),
+    );
+    expect(left).toEqual([]);
+  });
+
   test("rechaza un idioma desconocido", async () => {
     const { admin } = await seed(setup());
     expect(

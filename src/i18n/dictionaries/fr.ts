@@ -75,9 +75,9 @@ export const fr: Record<string, string> = {
   "Usuarios con nombre, rol y centro": "Des utilisateurs avec nom, rôle et site",
   "De cada usuario se gestionan su nombre, su centro de trabajo y su rol. Los administradores añaden, bloquean, eliminan y modifican cuentas.":
     "Pour chaque utilisateur, on gère son nom, son site de travail et son rôle. Les administrateurs ajoutent, bloquent, suppriment et modifient des comptes.",
-  "Cuatro tipos de documento": "Quatre types de document",
-  "Fichas técnicas, fichas de seguridad, manuales de instrucciones e instrucciones de trabajo, siempre asignados a un centro.":
-    "Fiches techniques, fiches de sécurité, manuels d'instructions et consignes de travail, toujours affectés à un site.",
+  "Tipos de documento a medida": "Des types de document sur mesure",
+  "Fichas técnicas, de seguridad, manuales e instrucciones de trabajo, más los tipos que cree tu administrador. Siempre asignados a un centro.":
+    "Fiches techniques, fiches de sécurité, manuels et consignes de travail, plus les types créés par votre administrateur. Toujours affectés à un site.",
   "Cada usuario solo ve las fichas de sus centros. Los administradores ven y gestionan todo el catálogo.":
     "Chaque utilisateur ne voit que les fiches de ses sites. Les administrateurs voient et gèrent tout le catalogue.",
   "Cómo funciona": "Comment ça marche",

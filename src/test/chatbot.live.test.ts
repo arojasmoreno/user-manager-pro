@@ -1,15 +1,16 @@
 import { describe, expect, test } from "vitest";
-import { answerFromContext } from "@/convex/gemini";
+import { answerFromContext } from "@/convex/aiClient";
 import { buildCatalogContext } from "@/convex/assistant";
 
 /**
- * Smoke test against the real Gemini API.
+ * Smoke test against the real AI provider.
  *
- * It only runs when GOOGLE_API_KEY is available in the environment, so the rest
- * of the suite stays offline and deterministic. Use it to confirm the key is
- * accepted, the model is reachable and the prompt gets a usable Spanish answer.
+ * It only runs when a key is available in the environment, so the rest of the
+ * suite stays offline and deterministic. Use it to confirm the key is accepted,
+ * the model is reachable and the prompt gets a usable answer.
  */
-const KEY = process.env.GOOGLE_API_KEY?.trim();
+const KEY =
+  process.env.GOOGLE_API_KEY?.trim() || process.env.VLY_INTEGRATION_KEY?.trim();
 const CATALOG = buildCatalogContext(
   [
     {
@@ -36,6 +37,17 @@ describe.skipIf(!KEY)("asistente contra la API real", () => {
     expect(answer.length).toBeGreaterThan(0);
     expect(answer.toLowerCase()).toContain("hypofoam");
     expect(answer.toLowerCase()).toContain("diversey");
+  }, 30_000);
+
+  test("responde en el idioma pedido sin inventarse datos", async () => {
+    const answer = await answerFromContext({
+      question: "Quel produit est Hypofoam et qui le fabrique ?",
+      catalog: CATALOG,
+      language: { code: "fr-FR", name: "Français" },
+    });
+
+    expect(answer.length).toBeGreaterThan(0);
+    expect(answer.toLowerCase()).toContain("hypofoam");
   }, 30_000);
 
   test("no inventa datos que no están en el catálogo", async () => {
