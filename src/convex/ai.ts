@@ -1,22 +1,21 @@
 "use node";
 
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { answerFromContext } from "./gemini";
+import {
+  answerFromContext,
+  answerLanguageFor,
+  userFacingAiError,
+} from "./aiClient";
 import {
   buildCatalogContext,
   rankByKeyword,
   toSources,
-  FICHA_KINDS,
-  type FichaKind,
   type FichaLike,
 } from "./assistant";
-
-const kindValidator = v.union(
-  ...FICHA_KINDS.map((k) => v.literal(k)),
-);
+import { fichaKindValidator } from "./fichaTypes";
 
 /**
  * Explicit shape of the internal query result. Written out (instead of inferred)
@@ -29,7 +28,8 @@ type CatalogResult = {
   fichas: {
     _id: Id<"fichas">;
     title: string;
-    kind: FichaKind;
+    kind: string;
+    kindName: string;
     productName?: string;
     manufacturer?: string;
     url: string;
@@ -51,14 +51,17 @@ const MAX_CONTEXT_FICHAS = 40;
  * and the rest follow, letting the model also match by meaning.
  */
 export const askFichaQuestion = action({
-  args: { question: v.string() },
+  // `locale` es el idioma activo en la interfaz: el asistente responde en él.
+  // Es opcional para que un cliente antiguo siga funcionando (en español).
+  args: { question: v.string(), locale: v.optional(v.string()) },
   returns: v.object({
     answer: v.string(),
     sources: v.array(
       v.object({
         _id: v.id("fichas"),
         title: v.string(),
-        kind: kindValidator,
+        kind: fichaKindValidator,
+        kindLabel: v.string(),
         url: v.string(),
         centerNames: v.array(v.string()),
       }),
@@ -68,7 +71,7 @@ export const askFichaQuestion = action({
   handler: async (ctx, args) => {
     const question = args.question.trim();
     if (question.length === 0) {
-      throw new Error("Escribe una pregunta antes de enviar.");
+      throw new ConvexError("Escribe una pregunta antes de enviar.");
     }
 
     const catalog: CatalogResult = await ctx.runQuery(
@@ -79,6 +82,7 @@ export const askFichaQuestion = action({
       _id: f._id,
       title: f.title,
       kind: f.kind,
+      kindLabel: f.kindName,
       productName: f.productName,
       manufacturer: f.manufacturer,
       url: f.url,
@@ -105,10 +109,19 @@ export const askFichaQuestion = action({
       .slice(0, Math.max(0, MAX_CONTEXT_FICHAS - ranked.length));
     const used = [...ranked, ...rest];
 
-    const answer = await answerFromContext({
-      question,
-      catalog: buildCatalogContext(used, catalog.centers),
-    });
+    // Convex redacta el mensaje de los errores que no son `ConvexError`, así que
+    // el motivo real (falta la clave de la IA, un 404 del modelo…) se convierte
+    // aquí para que la interfaz pueda explicarlo en lugar de mostrar un genérico.
+    let answer: string;
+    try {
+      answer = await answerFromContext({
+        question,
+        catalog: buildCatalogContext(used, catalog.centers),
+        language: answerLanguageFor(args.locale),
+      });
+    } catch (err) {
+      throw userFacingAiError(err);
+    }
 
     return {
       answer,

@@ -1,4 +1,7 @@
 import { api } from "@/convex/_generated/api";
+import { useFichaTranslations } from "@/hooks/use-ficha-translations";
+import { useI18n } from "@/i18n";
+import { errorText } from "@/lib/convexErrors";
 import { useAction } from "convex/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +20,8 @@ type Source = {
   _id: string;
   title: string;
   kind: string;
+  /** Nombre del tipo tal y como lo definió el administrador. */
+  kindLabel: string;
   url: string;
   centerNames: string[];
 };
@@ -30,13 +35,6 @@ type Turn = {
   pending?: boolean;
 };
 
-const KIND_LABELS: Record<string, string> = {
-  ficha_tecnica: "Ficha técnica",
-  ficha_seguridad: "Ficha de seguridad",
-  manual_instrucciones: "Manual de máquina",
-  instrucciones_trabajo: "Instrucción de trabajo",
-};
-
 const SUGGESTIONS = [
   "¿Qué fichas hay sobre productos de limpieza?",
   "¿Qué documentación existe para el centro Montornes?",
@@ -44,7 +42,10 @@ const SUGGESTIONS = [
 ];
 
 export function AsistenteSection() {
+  const { locale } = useI18n();
   const ask = useAction(api.ai.askFichaQuestion);
+  // Las fichas se muestran con su título traducido cuando existe.
+  const translateFicha = useFichaTranslations();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
@@ -62,7 +63,7 @@ export function AsistenteSection() {
     setQuestion("");
     setBusy(true);
     try {
-      const result = await ask({ question: clean });
+      const result = await ask({ question: clean, locale });
       setTurns((prev) =>
         prev.map((t) =>
           t.id === id
@@ -82,10 +83,12 @@ export function AsistenteSection() {
             ? {
                 id,
                 question: t.question,
-                error:
-                  err instanceof Error
-                    ? err.message
-                    : "No se ha podido consultar al asistente.",
+                error: errorText(
+                  err,
+                  // Convex redacta los fallos del servidor: si no viaja el motivo
+                  // real, al menos se señala lo primero que hay que revisar.
+                  "No se ha podido consultar al asistente. Revisa que la clave de la IA esté configurada en el proyecto de Convex.",
+                ),
               }
             : t,
         ),
@@ -167,10 +170,10 @@ export function AsistenteSection() {
                             >
                               <span className="min-w-0">
                                 <span className="block truncate text-sm font-medium">
-                                  {s.title}
+                                  {translateFicha(s).title}
                                 </span>
                                 <span className="font-ui text-[11px] text-muted-foreground">
-                                  {KIND_LABELS[s.kind] ?? s.kind}
+                                  {s.kindLabel ?? s.kind}
                                   {s.centerNames.length > 0
                                     ? ` · ${s.centerNames.join(", ")}`
                                     : ""}

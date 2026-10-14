@@ -80,9 +80,9 @@ export const en: Record<string, string> = {
   "Usuarios con nombre, rol y centro": "Users with a name, a role and a site",
   "De cada usuario se gestionan su nombre, su centro de trabajo y su rol. Los administradores añaden, bloquean, eliminan y modifican cuentas.":
     "Each user's name, site and role are managed here. Administrators add, block, delete and edit accounts.",
-  "Cuatro tipos de documento": "Four document types",
-  "Fichas técnicas, fichas de seguridad, manuales de instrucciones e instrucciones de trabajo, siempre asignados a un centro.":
-    "Technical sheets, safety sheets, instruction manuals and work instructions, always assigned to a site.",
+  "Tipos de documento a medida": "Document types that fit your work",
+  "Fichas técnicas, de seguridad, manuales e instrucciones de trabajo, más los tipos que cree tu administrador. Siempre asignados a un centro.":
+    "Technical sheets, safety sheets, manuals and work instructions, plus any type your administrator creates. Always assigned to a site.",
   "Cada usuario solo ve las fichas de sus centros. Los administradores ven y gestionan todo el catálogo.":
     "Each user only sees the sheets from their own sites. Administrators see and manage the whole catalogue.",
   "Cómo funciona": "How it works",

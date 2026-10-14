@@ -3,23 +3,15 @@
  * the ranking and context-building rules can be unit tested directly.
  */
 
-export type FichaKind =
-  | "ficha_tecnica"
-  | "ficha_seguridad"
-  | "manual_instrucciones"
-  | "instrucciones_trabajo";
-
-export const FICHA_KINDS: readonly FichaKind[] = [
-  "ficha_tecnica",
-  "ficha_seguridad",
-  "manual_instrucciones",
-  "instrucciones_trabajo",
-];
+import { DEFAULT_KIND_LABELS } from "../lib/fichaTypes";
 
 export type FichaLike = {
   _id: string;
   title: string;
-  kind: FichaKind;
+  /** Slug del tipo de ficha; los tipos los define el administrador. */
+  kind: string;
+  /** Nombre visible del tipo. Si falta, se usa el de serie o el propio slug. */
+  kindLabel?: string;
   productName?: string;
   manufacturer?: string;
   url: string;
@@ -29,12 +21,16 @@ export type FichaLike = {
 
 export type CenterLike = { _id: string; name: string; code: string };
 
-export const KIND_LABELS: Record<FichaKind, string> = {
-  ficha_tecnica: "Ficha técnica",
-  ficha_seguridad: "Ficha de seguridad",
-  manual_instrucciones: "Manual de máquina",
-  instrucciones_trabajo: "Instrucción de trabajo",
-};
+/**
+ * Etiqueta legible del tipo de una ficha. Los tipos de serie mantienen su
+ * nombre en español aunque la consulta no los traiga; un tipo creado por el
+ * administrador llega ya resuelto en `kindLabel`.
+ */
+export function fichaKindLabel(ficha: Pick<FichaLike, "kind" | "kindLabel">): string {
+  const custom = ficha.kindLabel?.trim();
+  if (custom) return custom;
+  return DEFAULT_KIND_LABELS[ficha.kind] ?? ficha.kind;
+}
 
 /** Lowercases and strips accents so "hipocloro" matches "hipócloro". */
 export function normalize(text: string): string {
@@ -59,7 +55,7 @@ export function tokenize(text: string): string[] {
 /** The text a ficha contributes to the catalog, also used for keyword search. */
 export function fichaHaystack(f: FichaLike): string {
   return normalize(
-    [f.title, f.productName, f.manufacturer, KIND_LABELS[f.kind]].join(" "),
+    [f.title, f.productName, f.manufacturer, fichaKindLabel(f)].join(" "),
   );
 }
 
@@ -114,7 +110,7 @@ export function buildCatalogContext(
       const names = centerNamesFor(f, centers);
       const lines = [
         `[${i + 1}] ${f.title}`,
-        `    Tipo: ${KIND_LABELS[f.kind] ?? f.kind}`,
+        `    Tipo: ${fichaKindLabel(f)}`,
       ];
       if (f.productName) lines.push(`    Producto: ${f.productName}`);
       if (f.manufacturer) lines.push(`    Fabricante: ${f.manufacturer}`);
@@ -128,7 +124,9 @@ export function buildCatalogContext(
 export type Source = {
   _id: string;
   title: string;
-  kind: FichaKind;
+  kind: string;
+  /** Nombre visible del tipo, para la etiqueta de la fuente citada. */
+  kindLabel: string;
   url: string;
   centerNames: string[];
 };
@@ -142,6 +140,7 @@ export function toSources(
     _id: f._id,
     title: f.title,
     kind: f.kind,
+    kindLabel: fichaKindLabel(f),
     url: f.url,
     centerNames: centerNamesFor(f, centers),
   }));
