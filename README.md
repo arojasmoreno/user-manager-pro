@@ -42,16 +42,19 @@ wins:
 | `GOOGLE_API_KEY` | Google AI Studio key, calls Gemini directly | https://aistudio.google.com/apikey |
 | `VLY_INTEGRATION_KEY` | Platform integration key, calls the AI gateway (any model, no extra account) | the project's Keys tab |
 
-Set it either from the project's **Keys** tab or with the Convex CLI:
+Set it in the project's **Keys** tab — with this setup that is the only route that
+can work. The deployment the app talks to (`VITE_CONVEX_URL`,
+`gallant-ladybug-133`) belongs to the project the hosting platform owns, not to
+your own Convex team, so `npx convex env set` answers `You don't have access to
+the selected project`. For the same reason
+`npx convex dev` and `npx convex deploy` cannot push these functions from a local
+checkout — the functions reach the deployment when the platform publishes the
+project. (The `CONVEX_DEPLOYMENT` value in `.env.local` is a platform identifier,
+so the CLI cannot even resolve it; it expects a deployment name such as
+`dev:gallant-ladybug-133`, passed with `--env-file`.)
 
-```bash
-npx convex env set GOOGLE_API_KEY <your-key>
-# or
-npx convex env set VLY_INTEGRATION_KEY <your-key>
-```
-
-Everything must be deployed before it takes effect (`npx convex dev` while
-developing, `npx convex deploy` for production).
+Everything must be deployed before it takes effect: set the key, then publish
+the project so the functions are pushed.
 
 Optional overrides:
 
