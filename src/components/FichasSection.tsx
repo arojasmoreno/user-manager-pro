@@ -1,10 +1,20 @@
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { ErrorState } from "@/components/ErrorState";
+import { FichaTranslations } from "@/components/FichaTranslations";
+import { FichaTypesDialog } from "@/components/FichaTypesDialog";
 import { useAuth } from "@/hooks/use-auth";
+import { useFichaTranslations } from "@/hooks/use-ficha-translations";
 import { useSafeQuery } from "@/hooks/use-safe-query";
 import { ROLES } from "@/lib/roles";
 import { isSupabaseConfigured, supabase, FICHAS_BUCKET } from "@/lib/supabase";
+import {
+  DEFAULT_FICHA_ICON,
+  fichaTypeLabel,
+  mergeFichaTypes,
+  type FichaType,
+} from "@/lib/fichaTypes";
+import { fichaIcon, fichaIconTone } from "@/lib/fichaIcons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,36 +40,25 @@ import { useMutation } from "convex/react";
 import {
   BookOpen,
   ExternalLink,
-  FileText,
-  ListChecks,
   Loader2,
   Plus,
   Search,
-  ShieldAlert,
   Trash2,
   Upload,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 type CenterDoc = Doc<"workCenters">;
 type FichaDoc = Doc<"fichas">;
-type FichaKind = FichaDoc["kind"];
 
-const KIND_LABELS: Record<FichaKind, string> = {
-  ficha_tecnica: "Ficha técnica",
-  ficha_seguridad: "Ficha de seguridad",
-  manual_instrucciones: "Manual de máquina",
-  instrucciones_trabajo: "Instrucción de trabajo",
-};
-
-const KIND_ICONS: Record<FichaKind, typeof FileText> = {
-  ficha_tecnica: FileText,
-  ficha_seguridad: ShieldAlert,
-  manual_instrucciones: BookOpen,
-  instrucciones_trabajo: ListChecks,
-};
+/**
+ * Etiqueta de un tipo. La lista llega del servidor; mientras carga se usan los
+ * cuatro tipos de serie, para que el catálogo nunca aparezca con slugs sueltos.
+ */
+const labelOf = (kind: string, types: readonly FichaType[]) =>
+  fichaTypeLabel(kind, types);
 
 /** Shared source-of-document control: upload to Supabase or paste a URL. */
 function DocumentSource({
@@ -190,11 +189,17 @@ function CenterPicker({
   );
 }
 
-function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
+function CreateFichaDialog({
+  centers,
+  types,
+}: {
+  centers: CenterDoc[];
+  types: readonly FichaType[];
+}) {
   const create = useMutation(api.fichas.create);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [kind, setKind] = useState<FichaKind>("ficha_tecnica");
+  const [kind, setKind] = useState<string>(types[0]?.slug ?? "");
   const [productName, setProductName] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [url, setUrl] = useState("");
@@ -209,7 +214,7 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
 
   const reset = () => {
     setTitle("");
-    setKind("ficha_tecnica");
+    setKind(types[0]?.slug ?? "");
     setProductName("");
     setManufacturer("");
     setUrl("");
@@ -217,9 +222,9 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
   };
 
   const submit = async () => {
-    if (!title.trim() || !url.trim() || centerIds.length === 0) {
+    if (!title.trim() || !url.trim() || centerIds.length === 0 || !kind) {
       toast.error(
-        "Completa el nombre, el documento y al menos un centro de trabajo.",
+        "Completa el tipo, el nombre, el documento y al menos un centro de trabajo.",
       );
       return;
     }
@@ -277,23 +282,25 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
               Tipo de ficha
             </Label>
-            <Select value={kind} onValueChange={(v) => setKind(v as FichaKind)}>
-              <SelectTrigger className="rounded-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-sm bg-card">
-                <SelectItem value="ficha_tecnica">Ficha técnica</SelectItem>
-                <SelectItem value="ficha_seguridad">
-                  Ficha de seguridad
-                </SelectItem>
-                <SelectItem value="manual_instrucciones">
-                  Manual de máquina
-                </SelectItem>
-                <SelectItem value="instrucciones_trabajo">
-                  Instrucción de trabajo
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            {types.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No hay ningún tipo de ficha activo. Créalo en «Tipos de ficha»
+                antes de añadir documentos.
+              </p>
+            ) : (
+              <Select value={kind} onValueChange={setKind}>
+                <SelectTrigger className="rounded-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-sm bg-card">
+                  {types.map((type) => (
+                    <SelectItem key={type.slug} value={type.slug}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -350,7 +357,7 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
           <Button
             className="font-ui rounded-sm"
             onClick={submit}
-            disabled={busy || centers.length === 0}
+            disabled={busy || centers.length === 0 || types.length === 0}
           >
             Añadir ficha
           </Button>
@@ -363,13 +370,16 @@ function CreateFichaDialog({ centers }: { centers: CenterDoc[] }) {
 function EditFichaDialog({
   ficha,
   centers,
+  types,
 }: {
   ficha: FichaDoc;
   centers: CenterDoc[];
+  types: readonly FichaType[];
 }) {
   const update = useMutation(api.fichas.update);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState(ficha.title);
+  const [kind, setKind] = useState<string>(ficha.kind);
   const [productName, setProductName] = useState(ficha.productName ?? "");
   const [manufacturer, setManufacturer] = useState(ficha.manufacturer ?? "");
   const [url, setUrl] = useState(ficha.url);
@@ -382,6 +392,7 @@ function EditFichaDialog({
   // reflect the latest saved values without an effect.
   const openWithFreshValues = () => {
     setTitle(ficha.title);
+    setKind(ficha.kind);
     setProductName(ficha.productName ?? "");
     setManufacturer(ficha.manufacturer ?? "");
     setUrl(ficha.url);
@@ -401,6 +412,7 @@ function EditFichaDialog({
       await update({
         fichaId: ficha._id,
         title: title.trim(),
+        kind,
         productName: productName.trim() || undefined,
         manufacturer: manufacturer.trim() || undefined,
         url: url.trim(),
@@ -429,14 +441,14 @@ function EditFichaDialog({
           Editar
         </Button>
       </DialogTrigger>
-      <DialogContent className="rounded-sm bg-card sm:max-w-md">
+      <DialogContent className="rounded-sm bg-card sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
             Editar ficha
           </DialogTitle>
-          <DialogDescription>{KIND_LABELS[ficha.kind]}</DialogDescription>
+          <DialogDescription>{labelOf(ficha.kind, types)}</DialogDescription>
         </DialogHeader>
-        <div className="grid max-h-[65vh] gap-4 overflow-y-auto py-2 pr-1">
+        <div className="grid max-h-[70vh] gap-4 overflow-y-auto py-2 pr-1">
           <div className="grid gap-2">
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
               Título
@@ -446,6 +458,28 @@ function EditFichaDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
+          </div>
+          <div className="grid gap-2">
+            <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
+              Tipo de ficha
+            </Label>
+            <Select value={kind} onValueChange={setKind}>
+              <SelectTrigger className="rounded-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-sm bg-card">
+                {/* El tipo actual siempre está en la lista, incluso si el
+                    administrador acaba de retirarlo. */}
+                {types.every((type) => type.slug !== kind) && (
+                  <SelectItem value={kind}>{kind}</SelectItem>
+                )}
+                {types.map((type) => (
+                  <SelectItem key={type.slug} value={type.slug}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
@@ -480,6 +514,9 @@ function EditFichaDialog({
               onToggle={toggleCenter}
             />
           </div>
+
+          {/* Solo pide las traducciones cuando el diálogo está abierto. */}
+          <FichaTranslations fichaId={ficha._id} enabled={open} />
         </div>
         <DialogFooter>
           <Button
@@ -540,6 +577,19 @@ export function FichasSection() {
     api.access.listMyCenters,
     isAdmin ? "skip" : {},
   );
+  // El catálogo trae los tipos visibles; el administrador usa además el panel
+  // de gestión, que sí incluye los retirados y cuántas fichas usa cada uno.
+  const publicTypes = useSafeQuery(
+    api.fichaTypes.listTypes,
+    isAdmin ? "skip" : {},
+  );
+  const adminTypes = useSafeQuery(
+    api.fichaTypes.listTypesAdmin,
+    isAdmin ? {} : "skip",
+  );
+  // Las fichas se muestran en el idioma activo; lo que no esté traducido se ve
+  // tal y como lo escribió el administrador, en español.
+  const translateFicha = useFichaTranslations();
   const myCenters = isAdmin ? (adminCenters.data ?? []) : (myCentersData.data ?? []);
 
   const queryError =
@@ -551,7 +601,7 @@ export function FichasSection() {
 
   const list = isAdmin ? (adminFichas.data ?? fichas.data) : fichas.data;
 
-  const [filter, setFilter] = useState<"all" | FichaKind>("all");
+  const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
   const centerNames = (ids: string[]) =>
@@ -559,28 +609,54 @@ export function FichasSection() {
       .map((id) => myCenters.find((c) => c._id === id)?.name)
       .filter(Boolean) as string[];
 
+  // Mientras carga la consulta se usan los cuatro tipos de serie, de modo que
+  // el catálogo nunca se pinte con slugs en crudo.
+  const types: FichaType[] = useMemo(() => {
+    if (!isAdmin) return publicTypes.data ?? mergeFichaTypes([]);
+    const loaded = adminTypes.data;
+    return loaded
+      ? loaded.filter((type) => !type.hidden)
+      : mergeFichaTypes([]);
+  }, [isAdmin, publicTypes.data, adminTypes.data]);
+
   const filtered = (list ?? []).filter((f) => {
     if (filter !== "all" && f.kind !== filter) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return (
-      f.title.toLowerCase().includes(q) ||
-      (f.productName ?? "").toLowerCase().includes(q) ||
-      (f.manufacturer ?? "").toLowerCase().includes(q)
-    );
+    // Se busca en los dos idiomas: el de la persona y el original.
+    const shown = translateFicha(f);
+    return [
+      f.title,
+      f.productName,
+      f.manufacturer,
+      shown.title,
+      shown.productName,
+      shown.manufacturer,
+    ].some((value) => (value ?? "").toLowerCase().includes(q));
   });
 
-  const counts = {
-    ficha_tecnica: (list ?? []).filter((f) => f.kind === "ficha_tecnica").length,
-    ficha_seguridad: (list ?? []).filter((f) => f.kind === "ficha_seguridad")
-      .length,
-    manual_instrucciones: (list ?? []).filter(
-      (f) => f.kind === "manual_instrucciones",
-    ).length,
-    instrucciones_trabajo: (list ?? []).filter(
-      (f) => f.kind === "instrucciones_trabajo",
-    ).length,
-  };
+  const countOf = (slug: string) =>
+    (list ?? []).filter((f) => f.kind === slug).length;
+
+  /**
+   * Tipos del filtro: los declarados más cualquier tipo que aparezca en una
+   * ficha sin estar en la lista. Así ninguna ficha queda fuera de los filtros
+   * por culpa de un catálogo antiguo.
+   */
+  const railTypes: FichaType[] = useMemo(() => {
+    const known = new Set(types.map((type) => type.slug));
+    const orphans = [...new Set((list ?? []).map((f) => f.kind))]
+      .filter((kind) => !known.has(kind))
+      .map((slug) => ({
+        slug,
+        name: labelOf(slug, types),
+        icon: DEFAULT_FICHA_ICON,
+        order: Number.MAX_SAFE_INTEGER,
+        builtIn: false,
+        hidden: false,
+      }));
+    return [...types, ...orphans];
+  }, [types, list]);
 
   if (queryError) {
     return <ErrorState message={queryError.message} />;
@@ -594,11 +670,16 @@ export function FichasSection() {
           <h2 className="font-display mt-2 text-3xl font-semibold">Fichas</h2>
           <p className="mt-2 max-w-lg text-sm text-muted-foreground">
             {isAdmin
-              ? "Añade, modifica y elimina fichas del catálogo y asígnalas a los centros de trabajo."
-              : "Fichas técnicas, de seguridad, manuales e instrucciones de tu centro de trabajo."}
+              ? "Añade, modifica y elimina fichas del catálogo, define tus propios tipos y asígnalas a los centros de trabajo."
+              : "Las fichas de tu centro de trabajo, con su tipo y su documento."}
           </p>
         </div>
-        {isAdmin && <CreateFichaDialog centers={myCenters} />}
+        {isAdmin && (
+          <div className="flex flex-wrap gap-2">
+            <FichaTypesDialog types={adminTypes.data ?? []} />
+            <CreateFichaDialog centers={myCenters} types={types} />
+          </div>
+        )}
       </div>
 
       {/* Search + filter rail */}
@@ -613,21 +694,19 @@ export function FichasSection() {
           />
         </div>
         <div className="flex flex-wrap items-center gap-4">
-          {(
-            [
-              ["all", "Todas"],
-              ["ficha_tecnica", "Técnicas"],
-              ["ficha_seguridad", "Seguridad"],
-              ["manual_instrucciones", "Manuales"],
-              ["instrucciones_trabajo", "Instrucciones"],
-            ] as const
-          ).map(([value, label]) => (
+          {[
+            { value: "all", label: "Todas" },
+            ...railTypes.map((type) => ({
+              value: type.slug,
+              label: type.name,
+            })),
+          ].map(({ value, label }) => (
             <button
               key={value}
               type="button"
               onClick={() => setFilter(value)}
               className={cn(
-                "font-ui text-sm transition-colors",
+                "font-ui cursor-pointer text-sm transition-colors",
                 filter === value
                   ? "font-medium text-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -636,9 +715,9 @@ export function FichasSection() {
               {label}
               {value !== "all" && (
                 <span className="ml-1 text-xs text-muted-foreground/70">
-                  {counts[value]}
+                  {countOf(value)}
                 </span>
-            )}
+              )}
             </button>
           ))}
         </div>
@@ -669,7 +748,9 @@ export function FichasSection() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((f) => {
-            const Icon = KIND_ICONS[f.kind];
+            const type = railTypes.find((item) => item.slug === f.kind);
+            const Icon = fichaIcon(type?.icon ?? "");
+            const shown = translateFicha(f);
             return (
               <article
                 key={f._id}
@@ -682,9 +763,7 @@ export function FichasSection() {
                   <div
                     className={cn(
                       "flex size-9 items-center justify-center rounded-sm border",
-                      f.kind === "ficha_seguridad"
-                        ? "border-destructive/30 text-destructive"
-                        : "border-border text-muted-foreground",
+                      fichaIconTone(type?.icon ?? ""),
                     )}
                   >
                     <Icon className="size-4" />
@@ -693,17 +772,22 @@ export function FichasSection() {
                     variant="secondary"
                     className="font-ui rounded-sm text-[10px] uppercase tracking-wider"
                   >
-                    {KIND_LABELS[f.kind]}
+                    {labelOf(f.kind, types)}
                   </Badge>
                 </div>
 
                 <h3 className="font-display mt-4 text-lg leading-snug font-semibold">
-                  {f.title}
+                  {shown.title}
                 </h3>
-                {(f.productName || f.manufacturer) && (
+                {(shown.productName || shown.manufacturer) && (
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {f.productName}
-                    {f.manufacturer ? ` · ${f.manufacturer}` : ""}
+                    {shown.productName}
+                    {shown.manufacturer ? ` · ${shown.manufacturer}` : ""}
+                  </p>
+                )}
+                {isAdmin && shown.isFallback && (
+                  <p className="font-ui mt-1 text-[11px] text-muted-foreground/80">
+                    Sin traducir
                   </p>
                 )}
 
@@ -730,7 +814,11 @@ export function FichasSection() {
                   </a>
                   {isAdmin && (
                     <div className="ml-auto flex items-center gap-1">
-                      <EditFichaDialog ficha={f} centers={myCenters} />
+                      <EditFichaDialog
+                        ficha={f}
+                        centers={myCenters}
+                        types={types}
+                      />
                       <DeleteFichaButton fichaId={f._id} />
                     </div>
                   )}

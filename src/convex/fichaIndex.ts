@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internalQuery } from "./_generated/server";
 import { requireUser } from "./access";
 import { ROLES } from "./schema";
-import { fichaKindValidator } from "./fichas";
+import { fichaKindValidator, readVisibleFichaTypes } from "./fichaTypes";
 
 /**
  * Backend for the ficha assistant. Convex actions cannot read the database
@@ -28,6 +28,8 @@ export const visibleCatalog = internalQuery({
         _id: v.id("fichas"),
         title: v.string(),
         kind: fichaKindValidator,
+        /** Etiqueta visible del tipo, ya resuelta para el modelo. */
+        kindName: v.string(),
         productName: v.optional(v.string()),
         manufacturer: v.optional(v.string()),
         url: v.string(),
@@ -49,6 +51,12 @@ export const visibleCatalog = internalQuery({
         (isAdmin || f.workCenterIds.some((c) => myCenters.includes(c))),
     );
 
+    // Los nombres de los tipos se resuelven aquí para que las acciones (que no
+    // pueden leer la base) reciban ya la etiqueta, incluidos los tipos nuevos.
+    const types = await readVisibleFichaTypes(ctx);
+    const nameOf = (kind: string) =>
+      types.find((type) => type.slug === kind)?.name ?? kind;
+
     return {
       isAdmin,
       centers: centers.map((c) => ({ _id: c._id, name: c.name, code: c.code })),
@@ -56,6 +64,7 @@ export const visibleCatalog = internalQuery({
         _id: f._id,
         title: f.title,
         kind: f.kind,
+        kindName: nameOf(f.kind),
         productName: f.productName,
         manufacturer: f.manufacturer,
         url: f.url,

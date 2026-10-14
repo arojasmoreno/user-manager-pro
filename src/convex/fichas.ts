@@ -2,13 +2,10 @@ import { v } from "convex/values";
 import { internalQuery, mutation, query } from "./_generated/server";
 import { ROLES } from "./schema";
 import { requireAdmin, requireUser } from "./access";
-
-export const fichaKindValidator = v.union(
-  v.literal("ficha_tecnica"),
-  v.literal("ficha_seguridad"),
-  v.literal("manual_instrucciones"),
-  v.literal("instrucciones_trabajo"),
-);
+import {
+  assertVisibleFichaType,
+  fichaKindValidator,
+} from "./fichaTypes";
 
 // ---------------------------------------------------------------------------
 // Queries
@@ -155,6 +152,9 @@ export const create = mutation({
   returns: v.id("fichas"),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    // El tipo lo elige el administrador, así que se comprueba contra la lista
+    // vigente en lugar de contra una unión fija en el esquema.
+    await assertVisibleFichaType(ctx, args.kind);
     const url = args.url.trim();
     if (!/^https?:\/\/.+/i.test(url)) {
       throw new Error("La URL debe empezar por http:// o https://");
@@ -194,7 +194,10 @@ export const update = mutation({
 
     const patch: Record<string, unknown> = {};
     if (args.title !== undefined) patch.title = args.title.trim();
-    if (args.kind !== undefined) patch.kind = args.kind;
+    if (args.kind !== undefined) {
+      await assertVisibleFichaType(ctx, args.kind);
+      patch.kind = args.kind;
+    }
     if (args.productName !== undefined) {
       patch.productName = args.productName.trim() || undefined;
     }
@@ -225,6 +228,15 @@ export const remove = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     await ctx.db.delete(args.fichaId);
+    // Las traducciones de la ficha se van con ella: sin esto quedarían filas
+    // huérfanas que ya no se pueden ver ni borrar desde la interfaz.
+    const translations = await ctx.db
+      .query("fichaTranslations")
+      .filter((q) => q.eq(q.field("fichaId"), args.fichaId))
+      .collect();
+    for (const row of translations) {
+      await ctx.db.delete(row._id);
+    }
     return null;
   },
 });
