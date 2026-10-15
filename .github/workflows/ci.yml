@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Permite lanzar el CI a mano desde la pestaña Actions, sin necesidad de un
+  # push ni de un PR (útil tras reescribir la historia o para reintentar).
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
