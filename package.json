@@ -9,6 +9,7 @@
     "dev:local": "npx --yes @dotenvx/dotenvx run --strict -f .env.local -- vite",
     "codegen": "node scripts/convex-codegen.mjs",
     "build": "tsc -b && vite build",
+    "deploy": "node scripts/deploy.mjs",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "secrets:check": "node scripts/scan-secrets.mjs",

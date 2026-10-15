@@ -60,28 +60,16 @@ jobs:
             exit 1
           fi
 
-      - name: Build
+      # Construir, publicar y verificar en un solo paso: el mismo script que se
+      # usa en local (`bun run deploy`), para que lo que funciona en tu máquina
+      # sea exactamente lo que corre aquí. Publica `dist/` como Worker
+      # sólo-con-assets (la configuración vive en wrangler.jsonc) y después
+      # comprueba la URL publicada: el fallback del SPA respondería 200 aunque no
+      # se sirviera un solo asset, así que un despliegue en verde, por sí solo, no
+      # probaría nada.
+      - name: Construir, publicar y verificar
         env:
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
-        run: bun run build
-
-      # Publica `dist/` como Worker sólo-con-assets. La configuración (directorio
-      # y fallback del SPA) vive en wrangler.jsonc, no aquí.
-      - name: Publicar en Cloudflare
-        id: deploy
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Fijada para que un cambio de versión del CLI no altere el despliegue.
-          wranglerVersion: "4"
-
-      # Publicar en verde no prueba nada: el fallback del SPA haría 200 aunque
-      # no se sirviera un solo asset. Por eso se comprueba además que la URL
-      # publicada trae el HTML de la app y que su asset principal se entrega
-      # como JavaScript. Si eso falla, el workflow queda en rojo y el último
-      # despliegue correcto sigue siendo el que está en producción.
-      - name: Comprobar que la web publicada sirve la app
-        env:
-          SITE_URL: ${{ steps.deploy.outputs.deployment-url }}
-        run: node scripts/check-site.mjs "${SITE_URL}"
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bun run deploy

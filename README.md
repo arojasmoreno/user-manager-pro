@@ -223,20 +223,39 @@ the repository's homepage, `docmanager.freebuff.app`, is served by the platform
 that hosts the project (its recorded deployments are published by
 `freebuff-web`), so a push to `main` does not republish it.
 
-What CI does own:
+Everything else is one command:
 
-- **`.github/workflows/deploy.yml`** (push to `main`, or Actions → Deploy → Run
-  workflow) builds and publishes `dist/` to Cloudflare Workers as the
-  `docmanager` worker. The configuration lives in `wrangler.jsonc`: assets only,
-  with the SPA fallback that keeps `/dashboard` and `/fichas` working on reload.
-  It needs three Actions secrets — `VITE_CONVEX_URL`, `CLOUDFLARE_API_TOKEN` and
-  `CLOUDFLARE_ACCOUNT_ID` — and checks them before the build, because a run
-  without them fails late, inside the provider's CLI.
-- **`scripts/check-site.mjs`** runs after the publish and fails the job unless
-  the deployed URL really serves the app: the root has to answer 200 with React's
-  mount point, and the asset that HTML references has to come back as
-  JavaScript. A bare 200 proves nothing here, because the SPA fallback answers
-  200 for anything.
+```bash
+bun run deploy                                  # check, build, publish, verify
+bun run deploy -- --no-deploy --url https://…    # build and verify only
+bun run deploy -- --no-build                     # publish the dist/ you already have
+bun run deploy -- --help
+```
+
+That is `scripts/deploy.mjs`, and **CI runs the same script**
+(`.github/workflows/deploy.yml`, on a push to `main` or from Actions → Deploy →
+Run workflow), so a mistake shows up on your machine before it shows up on
+`main`. It does four things:
+
+1. **checks the environment.** `VITE_CONVEX_URL` has to be there — from the
+   environment in CI, or locally decrypted from `.env.local` with dotenvx,
+   exactly like `dev:local`. Publishing additionally needs
+   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Those three are the
+   Actions secrets the workflow checks before it starts, because a run without
+   them fails late, inside the provider's CLI.
+2. **builds** `dist/` (`bun run build`).
+3. **publishes** it with `wrangler deploy` as the `docmanager` worker — the
+   configuration lives in `wrangler.jsonc`: assets only, with the SPA fallback
+   that keeps `/dashboard` and `/fichas` working on a reload.
+4. **verifies the URL it just published** (`scripts/check-site.mjs`) and fails if
+   that URL does not serve the app.
+
+Step 4 is not ceremony. The SPA fallback answers 200 for any path, so a green
+deploy proves nothing by itself: `check-site.mjs` requires the root to return 200
+with React's mount point *and* the asset that HTML references to come back as
+JavaScript. When it fails, the command says so and points at
+`npx wrangler@4 rollback`, because the last correct deployment is still the one
+serving.
 
 Cloudflare serves the worker from its own URL and `freebuff.app` belongs to the
 platform, so the two hosts are independent: publishing the worker does not move
