@@ -15,11 +15,38 @@ This project uses the following tech stack:
 
 All relevant files live in the 'src' directory.
 
-Use bun for the package manager.
+Use bun for the package manager. `bun.lock` is the only lockfile: do not add a
+`package-lock.json`. The exact bun version is pinned in `package.json`
+(`packageManager`), and CI installs with `bun install --frozen-lockfile`.
 
 ## Setup
 
 This project is set up already and running on a cloud environment, as well as a convex development in the sandbox.
+
+### Generated Convex code
+
+`src/convex/_generated/` **is committed** (Convex recommends it and the repo does
+not typecheck without it). Regenerate it when you add, rename or remove a
+function in `src/convex/`:
+
+```bash
+bun run codegen        # node scripts/convex-codegen.mjs
+```
+
+The canonical command is `npx convex dev`, but it needs credentials for the
+deployment this project points at. `scripts/convex-codegen.mjs` reproduces the
+same output offline, using the templates of the installed `convex` package.
+
+### Checks
+
+```bash
+bun run typecheck      # tsc -b
+bun run lint           # eslint
+bun run test           # vitest run
+bun run build          # tsc -b && vite build
+```
+
+All four run in CI (`.github/workflows/ci.yml`).
 
 ## Environment Variables
 

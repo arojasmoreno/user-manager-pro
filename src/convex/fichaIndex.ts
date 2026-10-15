@@ -44,11 +44,12 @@ export const visibleCatalog = internalQuery({
     const myCenters = user.workCenterIds ?? [];
 
     const centers = await ctx.db.query("workCenters").collect();
-    const all = await ctx.db.query("fichas").collect();
-    const visible = all.filter(
-      (f) =>
-        f.active &&
-        (isAdmin || f.workCenterIds.some((c) => myCenters.includes(c))),
+    const active = await ctx.db
+      .query("fichas")
+      .withIndex("active", (q) => q.eq("active", true))
+      .collect();
+    const visible = active.filter(
+      (f) => isAdmin || f.workCenterIds.some((c) => myCenters.includes(c)),
     );
 
     // Los nombres de los tipos se resuelven aquí para que las acciones (que no

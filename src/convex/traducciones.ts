@@ -20,11 +20,13 @@ async function visibleFichaIds(
   role: string | undefined,
   myCenters: Id<"workCenters">[],
 ): Promise<Set<Id<"fichas">>> {
-  const fichas = await ctx.db.query("fichas").collect();
+  const fichas = await ctx.db
+    .query("fichas")
+    .withIndex("active", (q) => q.eq("active", true))
+    .collect();
   const isAdmin = role === ROLES.ADMIN;
   return new Set(
     fichas
-      .filter((f) => f.active)
       .filter((f) =>
         isAdmin ? true : f.workCenterIds.some((c) => myCenters.includes(c)),
       )
@@ -54,6 +56,9 @@ export const listTranslations = query({
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     if (!isLocaleCode(args.locale) || args.locale === SOURCE_LOCALE) return [];
+    // Se guarda en una constante para conservar el estrechamiento de tipo
+    // dentro del callback del índice.
+    const locale = args.locale;
 
     const visible = await visibleFichaIds(
       ctx,
@@ -62,7 +67,7 @@ export const listTranslations = query({
     );
     const rows = await ctx.db
       .query("fichaTranslations")
-      .filter((q) => q.eq(q.field("locale"), args.locale))
+      .withIndex("byLocale", (q) => q.eq("locale", locale))
       .collect();
 
     return rows
@@ -94,7 +99,7 @@ export const listByFicha = query({
     await requireAdmin(ctx);
     const rows = await ctx.db
       .query("fichaTranslations")
-      .filter((q) => q.eq(q.field("fichaId"), args.fichaId))
+      .withIndex("byFicha", (q) => q.eq("fichaId", args.fichaId))
       .collect();
     return rows.map((r) => ({
       locale: r.locale,
@@ -114,7 +119,7 @@ export const missingLocales = query({
     await requireAdmin(ctx);
     const rows = await ctx.db
       .query("fichaTranslations")
-      .filter((q) => q.eq(q.field("fichaId"), args.fichaId))
+      .withIndex("byFicha", (q) => q.eq("fichaId", args.fichaId))
       .collect();
     const done = new Set(rows.map((r) => r.locale));
     return LOCALES.map((l) => l.code).filter(
@@ -143,8 +148,9 @@ async function upsertTranslation(
   }
   const existing = await ctx.db
     .query("fichaTranslations")
-    .filter((q) => q.eq(q.field("fichaId"), args.fichaId))
-    .filter((q) => q.eq(q.field("locale"), args.locale))
+    .withIndex("byFichaLocale", (q) =>
+      q.eq("fichaId", args.fichaId).eq("locale", args.locale),
+    )
     .first();
 
   const fields = {
@@ -191,8 +197,9 @@ export const deleteTranslation = mutation({
     await requireAdmin(ctx);
     const rows = await ctx.db
       .query("fichaTranslations")
-      .filter((q) => q.eq(q.field("fichaId"), args.fichaId))
-      .filter((q) => q.eq(q.field("locale"), args.locale))
+      .withIndex("byFichaLocale", (q) =>
+        q.eq("fichaId", args.fichaId).eq("locale", args.locale),
+      )
       .collect();
     for (const row of rows) {
       await ctx.db.delete(row._id);

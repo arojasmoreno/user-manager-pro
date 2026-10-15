@@ -33,9 +33,13 @@ export const listMine = query({
     const user = await requireUser(ctx);
     const isAdmin = user.role === ROLES.ADMIN;
     const mine = user.workCenterIds ?? [];
-    const all = await ctx.db.query("fichas").collect();
-    return all
-      .filter((f) => f.active && (f.workCenterIds ?? []).length > 0)
+    // Sólo las activas: se filtra por el índice en lugar de leer toda la tabla.
+    const active = await ctx.db
+      .query("fichas")
+      .withIndex("active", (q) => q.eq("active", true))
+      .collect();
+    return active
+      .filter((f) => (f.workCenterIds ?? []).length > 0)
       .filter((f) => {
         const centers = f.workCenterIds ?? [];
         return isAdmin || centers.some((c) => mine.includes(c));
@@ -232,7 +236,7 @@ export const remove = mutation({
     // huérfanas que ya no se pueden ver ni borrar desde la interfaz.
     const translations = await ctx.db
       .query("fichaTranslations")
-      .filter((q) => q.eq(q.field("fichaId"), args.fichaId))
+      .withIndex("byFicha", (q) => q.eq("fichaId", args.fichaId))
       .collect();
     for (const row of translations) {
       await ctx.db.delete(row._id);

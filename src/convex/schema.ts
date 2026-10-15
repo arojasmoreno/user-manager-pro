@@ -76,7 +76,9 @@ const schema = defineSchema(
       url: v.string(),
       workCenterIds: v.array(v.id("workCenters")),
       active: v.boolean(),
-    }).index("active", ["active"]),
+    })
+      .index("active", ["active"])
+      .index("byKind", ["kind"]),
 
     // Admin-created invitations (admin "adds users" by email)
     invites: defineTable({
@@ -103,7 +105,8 @@ const schema = defineSchema(
       _creationTime: v.number(),
     })
       .index("byFicha", ["fichaId"])
-      .index("byFichaLocale", ["fichaId", "locale"]),
+      .index("byFichaLocale", ["fichaId", "locale"])
+      .index("byLocale", ["locale"]),
 
     // One-shot app metadata (e.g. bootstrap admin promo marker)
     appMeta: defineTable({

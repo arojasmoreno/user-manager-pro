@@ -1,6 +1,12 @@
 .env.local
+# Clave privada de dotenvx para descifrar .env.local: nunca se versiona.
+.env.keys
 node_modules
 dist
-src/convex/_generated
 backups/*.zip
 .convex-token
+# Copias de builds anteriores (arteactos, no código).
+isolate/
+
+# Código generado por Convex: SÍ se versiona (el repo no compila sin él).
+# Regenerar con `npx convex dev` o `node scripts/convex-codegen.mjs`.

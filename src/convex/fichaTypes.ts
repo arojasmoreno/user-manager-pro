@@ -282,7 +282,7 @@ export const deleteType = mutation({
 
     const inUse = await ctx.db
       .query("fichas")
-      .filter((q) => q.eq(q.field("kind"), args.slug))
+      .withIndex("byKind", (q) => q.eq("kind", args.slug))
       .collect();
     if (inUse.length > 0) {
       const plural = inUse.length === 1 ? "ficha usa" : "fichas usan";

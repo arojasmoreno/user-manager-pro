@@ -299,7 +299,7 @@ export const createCenter = mutation({
     await requireAdmin(ctx);
     const existing = await ctx.db
       .query("workCenters")
-      .filter((q) => q.eq(q.field("code"), args.code.trim().toUpperCase()))
+      .withIndex("code", (q) => q.eq("code", args.code.trim().toUpperCase()))
       .first();
     if (existing !== null) {
       throw new Error("Ya existe un centro de trabajo con ese código.");
@@ -365,7 +365,7 @@ export const inviteUser = mutation({
 
     const existing = await ctx.db
       .query("invites")
-      .filter((q) => q.eq(q.field("email"), email))
+      .withIndex("email", (q) => q.eq("email", email))
       .first();
 
     if (existing !== null && existing.status === "pending") {

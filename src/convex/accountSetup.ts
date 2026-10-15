@@ -27,7 +27,7 @@ async function applyInviteForNewUser(
 
   const invite = await ctx.db
     .query("invites")
-    .filter((q) => q.eq(q.field("email"), normalized))
+    .withIndex("email", (q) => q.eq("email", normalized))
     .first();
   if (invite === null || invite.status !== "pending") return;
 
