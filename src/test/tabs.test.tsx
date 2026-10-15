@@ -40,6 +40,7 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { CentrosSection } from "@/components/CentrosSection";
 import { FichasSection } from "@/components/FichasSection";
+import { UsuariosSection } from "@/components/UsuariosSection";
 import { I18nProvider } from "@/i18n";
 
 const CENTERS = [
@@ -141,6 +142,16 @@ const USERS = [
   },
 ];
 
+const INVITES = [
+  {
+    _id: "i1",
+    _creationTime: 9,
+    email: "nuevo@example.com",
+    role: "user",
+    status: "pending",
+  },
+];
+
 const TRANSLATIONS: { fichaId: string; locale: string; title: string }[] = [];
 
 const ok = (data: unknown): QueryResult => ({ status: "success", data });
@@ -187,6 +198,13 @@ function queueFichasUser() {
 /** CentrosSection: listCenters, listUsers, listAll. */
 function queueCentros() {
   h.queue = [ok(CENTERS), ok(USERS), ok(FICHAS)];
+}
+
+/**
+ * UsuariosSection: currentUser, listUsers, listCenters, listInvites.
+ */
+function queueUsuarios() {
+  h.queue = [ok(USERS[0]), ok(USERS), ok(CENTERS), ok(INVITES)];
 }
 
 beforeEach(() => {
@@ -272,6 +290,29 @@ describe("pestaña Fichas", () => {
     queueFichasAdmin();
     h.failing.add(1); // fichas:listAll
     renderTab(<FichasSection />);
+
+    expect(screen.getByText(/No se ha podido cargar/)).toBeTruthy();
+    expect(screen.getByText("fallo en la consulta 1")).toBeTruthy();
+  });
+});
+
+describe("pestaña Usuarios", () => {
+  test("lista las cuentas y las invitaciones pendientes", () => {
+    queueUsuarios();
+    renderTab(<UsuariosSection />);
+
+    expect(screen.getByText("Admin")).toBeTruthy();
+    expect(screen.getByText("admin@example.com")).toBeTruthy();
+    expect(screen.getByText("nuevo@example.com")).toBeTruthy();
+    // Una cuenta y una invitación pendiente.
+    expect(screen.getAllByText("(1)").length).toBe(2);
+    expect(screen.queryByText(/No se ha podido cargar/)).toBeNull();
+  });
+
+  test("muestra la pantalla de error si la consulta de usuarios falla", () => {
+    queueUsuarios();
+    h.failing.add(1); // access:listUsers
+    renderTab(<UsuariosSection />);
 
     expect(screen.getByText(/No se ha podido cargar/)).toBeTruthy();
     expect(screen.getByText("fallo en la consulta 1")).toBeTruthy();
