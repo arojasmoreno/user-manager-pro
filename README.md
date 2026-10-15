@@ -69,6 +69,17 @@ A line that is a false positive can be exempted with `secret-scan:allow`
 them in `.env.local` (git-ignored, encrypted with dotenvx), so the private key
 only lives in `.env.keys` and in the platform's secret store.
 
+One trap when running the scan locally: `gitleaks dir .` does not honour
+`.gitignore`, so on a checkout that has the real `.env.keys` on disk it reports a
+leak there. That file belongs on your machine and is not versioned, and CI
+checks out a fresh tree, which is why CI stays green. To reproduce CI exactly,
+scan an export of the committed tree instead:
+
+```bash
+git archive HEAD | tar -x -C /tmp/repo-check
+gitleaks dir /tmp/repo-check --config .gitleaks.toml --redact --no-banner
+```
+
 ### Keys already committed (history scan)
 
 Deleting a key from the working tree does not delete it from the repository: it
