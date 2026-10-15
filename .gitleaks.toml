@@ -1,0 +1,39 @@
+# Configuración de gitleaks para este proyecto.
+#
+# Extiende las reglas por defecto y añade las específicas de dotenvx (que es
+# como se guardan los secretos aquí: la clave privada vive en `.env.keys`).
+#
+# Uso local:  gitleaks dir . --config .gitleaks.toml --redact
+# En CI:      ver `.github/workflows/ci.yml`
+
+[extend]
+useDefault = true
+
+# --- Reglas propias ---------------------------------------------------------
+
+# La clave privada de dotenvx dentro del fichero que le corresponde.
+[[rules]]
+id = "dotenvx-private-key-file"
+description = "Clave privada de dotenvx en un .env.keys"
+path = '''(^|/)\.env\.keys$'''
+regex = '''(?i)\bDOTENV_PRIVATE_KEY(?:_[A-Z0-9]+)?\b[ \t]*=[ \t]*["']?([a-f0-9]{64})["']?'''
+secretGroup = 1
+
+# La misma asignación fuera de `.env.keys`: nadie debería pegarla en otro sitio.
+[[rules]]
+id = "dotenvx-private-key-variable"
+description = "Asignación de DOTENV_PRIVATE_KEY fuera de .env.keys"
+regex = '''(?i)\bDOTENV_PRIVATE_KEY(?:_[A-Z0-9]+)?\b[ \t]*=[ \t]*["']?([a-f0-9]{64})["']?'''
+secretGroup = 1
+
+# --- Exclusiones ------------------------------------------------------------
+
+[allowlist]
+description = "Rutas que no se escanean (ruido o plantillas sin valores)"
+paths = [
+  '''(^|/)\.git/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)dist/''',
+  '''(^|/)isolate/''',
+  '''(^|/)\.env\.(example|sample|template)$''',
+]

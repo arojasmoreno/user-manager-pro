@@ -1,0 +1,9 @@
+#!/bin/sh
+# Bloquea el commit si lo preparado contiene un secreto (claves como .env.keys).
+#
+# Instalación (una vez por clon):
+#   bun run hooks:install
+# Deshacer:
+#   git config --unset core.hooksPath
+
+exec node scripts/scan-secrets.mjs --staged

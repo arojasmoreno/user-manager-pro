@@ -48,6 +48,42 @@ bun run build          # tsc -b && vite build
 
 All four run in CI (`.github/workflows/ci.yml`).
 
+### Secret leaks
+
+CI runs a secrets scan on every push and pull request: the dependency-free
+`scripts/scan-secrets.mjs` plus [gitleaks](https://github.com/gitleaks/gitleaks)
+with the project rules in `.gitleaks.toml` (dotenvx `.env.keys` and
+`DOTENV_PRIVATE_KEY`). The scan looks at the working tree, not the history.
+
+To run it locally, and to install the versioned pre-commit hook that blocks
+committing a key in the first place:
+
+```bash
+bun run secrets:check     # node scripts/scan-secrets.mjs
+bun run hooks:install     # git config core.hooksPath .githooks
+```
+
+A line that is a false positive can be exempted with `secret-scan:allow`
+(`gitleaks:allow` for gitleaks). Never put secret values in tracked files: keep
+them in `.env.local` (git-ignored, encrypted with dotenvx), so the private key
+only lives in `.env.keys` and in the platform's secret store.
+
+### Local dev with the encrypted `.env.local`
+
+The platform runs `bun run dev` (`vite`) and injects the variables itself, so that
+script must stay as it is. To run the app on your own machine the variables have
+to be decrypted first, which is what `dev:local` does:
+
+```bash
+bun run dev:local      # dotenvx run --strict -f .env.local -- vite
+```
+
+It needs `.env.local` (git-ignored) **and** `.env.keys` (the dotenvx private key,
+also git-ignored) next to it; neither is in the repository, so copy both from a
+checkout that already has them. Never commit either file. `--strict` makes the
+script fail with a clear error instead of starting Vite without variables when
+either file is missing, so a broken setup cannot be mistaken for a working one.
+
 ## Environment Variables
 
 The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side.
