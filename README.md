@@ -170,6 +170,36 @@ commits reachable by their SHA, and forks may still hold them. The rotation is
 what actually protects you; if the key was sensitive, ask GitHub Support to
 dereference the old commits.
 
+#### Rotating the dotenvx key
+
+`dotenvx encrypt` re-encrypts with the public key that is already in the file, and
+generates a fresh keypair only when the file has no public key **and** there is no
+private key for that environment in `.env.keys`. The sequence below uses exactly
+that, so the new key never has to be handled by hand:
+
+```bash
+cp .env.local .env.local.bak && cp .env.keys .env.keys.bak
+npx @dotenvx/dotenvx decrypt -f .env.local          # plaintext, on your machine only
+grep -v '^DOTENV_PUBLIC_KEY' .env.local > .env.local.tmp
+mv .env.local.tmp .env.local
+rm .env.keys                                        # forces a new keypair
+npx @dotenvx/dotenvx encrypt -f .env.local          # writes the new key to .env.keys
+```
+
+Verify all four points before deleting the backups:
+
+1. `.env.keys` holds exactly one `DOTENV_PRIVATE_KEY_LOCAL`, and it is not the old value;
+2. `.env.local` has no line outside `DOTENV_PUBLIC_KEY_*` and `…=encrypted:…`
+   (a leftover plaintext line is the real risk of this operation);
+3. the values are unchanged — `npx @dotenvx/dotenvx run --strict -f .env.local -- env | grep -c '^CONVEX'`
+   still finds them, and comparing hashes of the values before and after is cheap;
+4. the **old** key no longer decrypts: put `.env.keys.bak` back and check that
+   `run --strict` fails. Without this step a rotation can look fine and have done nothing.
+
+Then update the value wherever it is stored outside your machine (the platform's
+secret store, CI secrets) and delete the backups: once the new key is in use, the
+old one is compromised by definition.
+
 ### Local dev with the encrypted `.env.local`
 
 The platform runs `bun run dev` (`vite`) and injects the variables itself, so that
@@ -185,6 +215,32 @@ also git-ignored) next to it; neither is in the repository, so copy both from a
 checkout that already has them. Never commit either file. `--strict` makes the
 script fail with a clear error instead of starting Vite without variables when
 either file is missing, so a broken setup cannot be mistaken for a working one.
+
+## Deployment
+
+The repository owns the build and a deployment to Cloudflare Workers; the URL in
+the repository's homepage, `docmanager.freebuff.app`, is served by the platform
+that hosts the project (its recorded deployments are published by
+`freebuff-web`), so a push to `main` does not republish it.
+
+What CI does own:
+
+- **`.github/workflows/deploy.yml`** (push to `main`, or Actions → Deploy → Run
+  workflow) builds and publishes `dist/` to Cloudflare Workers as the
+  `docmanager` worker. The configuration lives in `wrangler.jsonc`: assets only,
+  with the SPA fallback that keeps `/dashboard` and `/fichas` working on reload.
+  It needs three Actions secrets — `VITE_CONVEX_URL`, `CLOUDFLARE_API_TOKEN` and
+  `CLOUDFLARE_ACCOUNT_ID` — and checks them before the build, because a run
+  without them fails late, inside the provider's CLI.
+- **`scripts/check-site.mjs`** runs after the publish and fails the job unless
+  the deployed URL really serves the app: the root has to answer 200 with React's
+  mount point, and the asset that HTML references has to come back as
+  JavaScript. A bare 200 proves nothing here, because the SPA fallback answers
+  200 for anything.
+
+Cloudflare serves the worker from its own URL and `freebuff.app` belongs to the
+platform, so the two hosts are independent: publishing the worker does not move
+`docmanager.freebuff.app` forward.
 
 ## Environment Variables
 

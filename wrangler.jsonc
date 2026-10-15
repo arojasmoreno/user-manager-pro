@@ -1,0 +1,18 @@
+{
+  // Configuración de publicación de la web (Cloudflare Workers).
+  //
+  // La app es un SPA estático: no hay lógica de servidor propia y el backend
+  // (datos y auth) es el deployment de Convex, que vive aparte. Por eso no hay
+  // `main`: basta con publicar `dist/` como assets. El build lo hace el
+  // workflow `.github/workflows/deploy.yml`, que es quien llena `dist/`.
+  "name": "docmanager",
+  "compatibility_date": "2026-10-15",
+
+  "assets": {
+    "directory": "./dist",
+    // Las rutas de cliente (react-router: /dashboard, /fichas…) no existen
+    // como fichero en `dist/`. Sin esto, recargar en una de ellas daría 404;
+    // con esto se sirve `index.html` y el router resuelve en el navegador.
+    "not_found_handling": "single-page-application"
+  }
+}
