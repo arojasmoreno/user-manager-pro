@@ -53,7 +53,8 @@ All four run in CI (`.github/workflows/ci.yml`).
 CI runs a secrets scan on every push and pull request: the dependency-free
 `scripts/scan-secrets.mjs` plus [gitleaks](https://github.com/gitleaks/gitleaks)
 with the project rules in `.gitleaks.toml` (dotenvx `.env.keys` and
-`DOTENV_PRIVATE_KEY`). The scan looks at the working tree, not the history.
+`DOTENV_PRIVATE_KEY`). The `secrets` job scans the working tree; the
+`secrets-history` job additionally walks the whole history (see below).
 
 To run it locally, and to install the versioned pre-commit hook that blocks
 committing a key in the first place:
@@ -67,6 +68,96 @@ A line that is a false positive can be exempted with `secret-scan:allow`
 (`gitleaks:allow` for gitleaks). Never put secret values in tracked files: keep
 them in `.env.local` (git-ignored, encrypted with dotenvx), so the private key
 only lives in `.env.keys` and in the platform's secret store.
+
+### Keys already committed (history scan)
+
+Deleting a key from the working tree does not delete it from the repository: it
+stays in the commit that added it. The `secrets-history` job covers that gap. It
+checks out the full history (`fetch-depth: 0`) and runs
+
+```bash
+gitleaks git . --config .gitleaks.toml --redact --no-banner --verbose --log-opts="--all"
+```
+
+so any commit that ever contained a `.env.keys` or a `DOTENV_PRIVATE_KEY`
+assignment fails the build. It is blocking on purpose: an old key is a live key
+until it is rotated. While such a key is still in the history of `main`, this
+job fails on `main` and on every pull request built from it; that is the signal
+to purge it (or to park it in a baseline, below). To run it locally you need
+gitleaks on your `PATH` (the
+pinned version lives in `.github/workflows/ci.yml`; releases are at
+github.com/gitleaks/gitleaks/releases) and a clone **with** history, since a
+shallow clone has none:
+
+```bash
+git fetch --unshallow        # only if you cloned with --depth
+```
+
+Two things to know before trusting a clean run:
+
+- Use a realistic value when you test the rules. The default ruleset carries an
+  allowlist for placeholder-looking strings, so a repeated value such as
+  `aaaa…` is filtered and looks like a false negative.
+- A finding you cannot fix today can be parked in a baseline and passed with
+  `--baseline-path .gitleaks-baseline.json`, which keeps the job green for the
+  known old key while still failing on new ones. Purging is the real fix.
+
+#### Purging a key that is already in the history
+
+**Rotate first.** Rewriting history does not un-publish anything: once the key has
+been pushed, treat it as compromised and replace it — for dotenvx that means a
+new `.env.keys` and updating the value in the platform's secret store (see
+*Local dev* below).
+
+**1. Remove it from the current tree**, so the working-tree scan stops flagging
+it:
+
+```bash
+git rm --cached .env.keys      # the file stays on your disk
+printf '.env.keys\n' >> .gitignore
+git commit -m "Stop versioning .env.keys"
+```
+
+**2. Rewrite the history**, from a fresh clone. Prefer
+[git-filter-repo](https://github.com/newren/git-filter-repo), which is what
+GitHub documents:
+
+```bash
+git clone https://github.com/OWNER/REPOSITORY.git && cd REPOSITORY
+git filter-repo --sensitive-data-removal --invert-paths --path .env.keys
+```
+
+Without `git-filter-repo` installed, the built-in equivalent is:
+
+```bash
+FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force \
+  --index-filter 'git rm --cached --ignore-unmatch -- .env.keys' \
+  --prune-empty --tag-name-filter cat -- --all
+
+git for-each-ref --format='delete %(refname)' refs/original/ | git update-ref --stdin
+git reflog expire --expire=now --all
+git gc --prune=now
+```
+
+Add a `--path` (or a second `git rm` path) for every historical location of the
+file if it was moved at some point.
+
+**3. Publish the rewrite:**
+
+```bash
+git push --force --prune --mirror origin
+```
+
+Collaborators must **re-clone**, not `git pull`: merging the old history brings
+the key back. Any clone that still has it is a leak until it is discarded.
+
+**4. Verify:** run the scan of the previous section again and expect
+`no leaks found`.
+
+**5. Know what a rewrite does not fix:** GitHub keeps cached views of old
+commits reachable by their SHA, and forks may still hold them. The rotation is
+what actually protects you; if the key was sensitive, ask GitHub Support to
+dereference the old commits.
 
 ### Local dev with the encrypted `.env.local`
 

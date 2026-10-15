@@ -37,8 +37,8 @@ jobs:
   secrets:
     runs-on: ubuntu-latest
     steps:
-      # Sólo hace falta la copia de trabajo: gitleaks escanea el árbol, no el
-      # historial (que aún contiene una clave filtrada que se purga aparte).
+      # Sólo hace falta la copia de trabajo: este job escanea el árbol. El
+      # historial lo cubre `secrets-history`, que necesita la historia completa.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
@@ -53,5 +53,37 @@ jobs:
           echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
           tar -xzf gitleaks.tar.gz gitleaks
 
-      - name: gitleaks
+      - name: gitleaks (árbol de trabajo)
         run: ./gitleaks dir . --config .gitleaks.toml --redact --no-banner --verbose
+
+  # Una clave que se borró del árbol sigue en el commit que la añadió. Este job
+  # recorre todo el historial y falla si alguna vez se versionó un `.env.keys` o
+  # una asignación de `DOTENV_PRIVATE_KEY`.
+  secrets-history:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 para tener todas las ramas y etiquetas: con un clon
+      # superficial no hay historial que escanear.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Instalar gitleaks
+        run: |
+          curl -sSfL -o gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+
+      - name: gitleaks (historial completo)
+        id: scan
+        run: ./gitleaks git . --config .gitleaks.toml --redact --no-banner --verbose --log-opts="--all"
+
+      # El fallo, sin más, no dice qué hacer. --redact ya evita que la clave
+      # acabe en el log del job.
+      - name: Qué hacer si aparece una clave
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo "::error::El escaneo del historial ha encontrado un secreto versionado."
+          echo "Rotar la clave primero, después purgarla del historial."
+          echo "Los pasos están en README.md, sección 'Keys already committed (history scan)'."
