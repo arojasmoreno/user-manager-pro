@@ -96,6 +96,27 @@ describe("resolveProvider: qué clave usa el servidor", () => {
       resolveProvider({ GOOGLE_API_KEY: "clave", GOOGLE_MODEL: "gemini-3.5-flash-lite" })
         .model,
     ).toBe("gemini-3.5-flash-lite");
+  });  test("usa Google cuando hay GOOGLE_API_KEY", () => {
+    expect(resolveProvider({ GOOGLE_API_KEY: "  clave  " })).toEqual({
+      kind: "google",
+      key: "clave",
+      model: DEFAULT_GOOGLE_MODEL,
+    });
+  });
+
+  test("acepta GEMINI_API_KEY como nombre alternativo", () => {
+    expect(resolveProvider({ GOOGLE_API_KEY: "", GEMINI_API_KEY: "otra" })).toEqual({
+      kind: "google",
+      key: "otra",
+      model: DEFAULT_GOOGLE_MODEL,
+    });
+  });
+
+  test("permite cambiar el modelo con GOOGLE_MODEL", () => {
+    expect(
+      resolveProvider({ GOOGLE_API_KEY: "clave", GOOGLE_MODEL: "gemini-3.5-flash-lite" })
+        .model,
+    ).toBe("gemini-3.5-flash-lite");
   });
 
   test("sin clave de Google usa la pasarela de la plataforma", () => {
@@ -321,3 +342,4 @@ describe("translateFields", () => {
     ).rejects.toThrow(/gemini-3\.8-flash.*404/);
   });
 });
+

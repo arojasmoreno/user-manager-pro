@@ -10,7 +10,9 @@ import { buildCatalogContext } from "@/convex/assistant";
  * the model is reachable and the prompt gets a usable answer.
  */
 const KEY =
-  process.env.GOOGLE_API_KEY?.trim() || process.env.VLY_INTEGRATION_KEY?.trim();
+  process.env.GOOGLE_API_KEY?.trim() ||
+  process.env.ANTHROPIC_API_KEY?.trim() ||
+  process.env.VLY_INTEGRATION_KEY?.trim();
 const CATALOG = buildCatalogContext(
   [
     {

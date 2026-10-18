@@ -24,6 +24,7 @@ const GOOGLE_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 /**
  * Modelos por defecto. Gemini 2.0 (el que se usaba antes) está apagado desde
  * 2025 y respondía 404, así que se usa el Flash estable actual.
+ * Ambos modelos se pueden cambiar con GOOGLE_MODEL y VLY_AI_MODEL.
  */
 export const DEFAULT_GOOGLE_MODEL = "gemini-3.8-flash";
 export const DEFAULT_GATEWAY_MODEL = "google/gemini-3.8-flash";

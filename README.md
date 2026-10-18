@@ -274,7 +274,7 @@ Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, an
 The assistant tab answers questions about the sheet catalogue, and the admin can
 translate a sheet's title, product and manufacturer from the sheet's edit
 dialog. Both features run on the server (Convex actions) and need **one** of
-these two variables in the deployment environment — the first one that is set
+these three variables in the deployment environment — the first one that is set
 wins:
 
 | Variable | What it is | Where to get it |
