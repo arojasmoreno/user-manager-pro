@@ -7,6 +7,7 @@ import {
   WorkspaceShell,
   type WorkspaceTab,
 } from "@/components/WorkspaceShell";
+import { AdminSection } from "@/components/AdminSection";
 import { ROLES } from "@/lib/roles";
 import { ASSISTANT_ENABLED } from "@/lib/features";
 import { useAuth } from "@/hooks/use-auth";
@@ -33,6 +34,7 @@ export default function Dashboard() {
       {ASSISTANT_ENABLED && activeTab === "asistente" && <AsistenteSection />}
       {isAdmin && activeTab === "centros" && <CentrosSection />}
       {isAdmin && activeTab === "usuarios" && <UsuariosSection />}
+      {isAdmin && activeTab === "admin" && <AdminSection />}
     </WorkspaceShell>
   );
 }

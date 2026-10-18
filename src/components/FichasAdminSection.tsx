@@ -1,5 +1,5 @@
 import { api } from "@/convex/_generated/api";
-import type { Doc, Id } from "@/convex/_generated/dataModel";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { useSafeQuery } from "@/hooks/use-safe-query";
 import { useAuth } from "@/hooks/use-auth";
 import { ROLES } from "@/lib/roles";
@@ -8,14 +8,23 @@ import { mergeFichaTypes, fichaTypeLabel, type FichaType } from "@/lib/fichaType
 import { fichaIcon, fichaIconTone } from "@/lib/fichaIcons";
 import { ErrorState } from "@/components/ErrorState";
 import { CreateFichaDialog } from "@/components/fichas/CreateFichaDialog";
-import { EditFichaDialog } from "@/components/fichas/EditFichaDialog";
 import { FichaTypesAdminDialog } from "@/components/FichaTypesAdminDialog";
 import { FichaCard } from "@/components/fichas/FichaCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookOpen, Search, FileText, ShieldAlert, BookOpenIcon, ListChecks } from "lucide-react";
+import { BookOpen, Search } from "lucide-react";
 import { useState, useMemo } from "react";
+import type { AdminFichaType } from "@/lib/fichaTypes";
 
 type FilterType = "all" | string;
+
+type AdminTypeWithCount = FichaType & { fichaCount: number };
+
+function toAdminType(item: AdminTypeWithCount): AdminFichaType {
+  return {
+    ...item,
+    id: item.slug,
+  };
+}
 
 export function FichasAdminSection() {
   const { user } = useAuth();
@@ -23,13 +32,13 @@ export function FichasAdminSection() {
   const translateFicha = useFichaTranslations();
 
   const allFichas = useSafeQuery(api.fichas.listAll);
-  const adminTypes = useSafeQuery(api.fichaTypes.listTypesAdmin);
+  const adminTypesRaw = useSafeQuery(api.fichaTypes.listTypesAdmin);
   const centers = useSafeQuery(api.access.listCenters);
   const visibleTypes = useSafeQuery(api.fichaTypes.listTypes);
 
   const queryError =
     allFichas.error ??
-    adminTypes.error ??
+    adminTypesRaw.error ??
     centers.error ??
     visibleTypes.error ??
     null;
@@ -38,25 +47,28 @@ export function FichasAdminSection() {
     return <ErrorState message={queryError.message} />;
   }
 
-  const types: FichaType[] = useMemo(() => {
-    const loaded = adminTypes.data;
+  const types = useMemo<FichaType[]>(() => {
+    const loaded = adminTypesRaw.data;
     if (!loaded) {
       return mergeFichaTypes([]);
     }
     return loaded.filter((type) => !type.hidden);
-  }, [adminTypes.data]);
+  }, [adminTypesRaw.data]);
 
-  const allTypes: FichaType[] = useMemo(() => {
-    const loaded = adminTypes.data;
+  const allTypes = useMemo<FichaType[]>(() => {
+    const loaded = adminTypesRaw.data;
     if (!loaded) {
       return mergeFichaTypes([]);
     }
     return loaded;
-  }, [adminTypes.data]);
+  }, [adminTypesRaw.data]);
+
+  const adminTypes = useMemo<AdminFichaType[]>(() => {
+    return (adminTypesRaw.data ?? []).map(toAdminType);
+  }, [adminTypesRaw.data]);
 
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
-  const [editFicha, setEditFicha] = useState<Doc<"fichas"> | null>(null);
 
   const filtered = useMemo(() => {
     const list = allFichas.data ?? [];
@@ -77,27 +89,23 @@ export function FichasAdminSection() {
   const countOf = (slug: string) =>
     (allFichas.data ?? []).filter((f) => f.kind === slug).length;
 
-  const typeIconMap: Record<string, React.ReactNode> = useMemo(
-    () => ({
-      ...Object.fromEntries(
-        types.map((type) => [type.slug, <IconComponentForSlug key={type.slug} slug={type.slug} />]),
-      ),
-    }),
-    [types],
-  );
+  const centerNames = (ids: string[]) =>
+    ids
+      .map((id) => centers.data?.find((c) => c._id === id)?.name)
+      .filter(Boolean) as string[];
 
   return (
-    <div className="space-y-8">
+    <div>
       <div>
         <p className="kicker">Administración</p>
         <h2 className="font-display mt-2 text-3xl font-semibold">Fichas</h2>
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          Gestión completa del catálogo: crea, edita, retira y organiza las fichas del sistema."
+          Gestión completa del catálogo: crea, edita, retira y organiza las fichas del sistema.
         </p>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <FichaTypesAdminDialog types={adminTypes.data ?? []} />
+        <FichaTypesAdminDialog types={adminTypes} />
         <CreateFichaDialog
           centers={centers.data ?? []}
           types={types}
@@ -116,17 +124,17 @@ export function FichasAdminSection() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {[
+          {([
             { value: "all", label: "Todas" },
             ...allTypes.map((type) => ({
               value: type.slug,
               label: type.name,
             })),
-          ].map(({ value, label }) => (
+          ] as const).map(({ value, label }) => (
             <button
               key={value}
               type="button"
-              onClick={() => setFilter(value as FilterType)}
+              onClick={() => setFilter(value)}
               className={`font-ui cursor-pointer text-sm transition-colors rounded-sm px-2 py-1 ${
                 filter === value
                   ? "font-medium text-foreground"
@@ -166,64 +174,26 @@ export function FichasAdminSection() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((f) => {
-            const type = allTypes.find((type) => type.slug === f.kind);
-            const icon =
-              typeIconMap[f.kind] ??
-              (() => {
-                const fallbackType = types.find(
-                  (t) => t.slug === f.kind,
-                );
-                return fallbackType
-                  ? fichaIcon(fallbackType.icon)
-                  : fichaIcon("file-text");
-              })();
-
-            return (
-              <FichaCard
-                key={f._id}
-                ficha={f}
-                types={types}
-                icon={icon}
-                iconTone={fichaIconTone(type?.icon ?? "file-text")}
-                myCenters={centers.data ?? []}
-                centerNames={(ids) =>
-                  ids
-                    .map((id) => centers.data?.find((c) => c._id === id)?.name)
-                    .filter(Boolean)
-                }
-                translateFicha={translateFicha}
-                isAdmin={true}
-                onEdit={() => setEditFicha(f)}
-              />
-            );
-          })}
+          {filtered.map((f) => (
+            <FichaCard
+              key={f._id}
+              ficha={f}
+              types={types}
+              icon={f.kind === "ficha_tecnica" ? "file-text"
+                : f.kind === "ficha_seguridad" ? "shield-alert"
+                : f.kind === "manual_instrucciones" ? "book-open"
+                : f.kind === "instrucciones_trabajo" ? "list-checks"
+                : (allTypes.find((t) => t.slug === f.kind)?.icon ?? "file-text")
+              }
+              iconTone={fichaIconTone(allTypes.find((t) => t.slug === f.kind)?.icon ?? "file-text")}
+              myCenters={centers.data ?? []}
+              centerNames={centerNames}
+              translateFicha={translateFicha}
+              isAdmin={true}
+            />
+          ))}
         </div>
-      )}
-
-      {editFicha && (
-        <EditFichaDialog
-          ficha={editFicha}
-          centers={centers.data ?? []}
-          types={types}
-          onClose={() => setEditFicha(null)}
-        />
       )}
     </div>
   );
-}
-
-function IconComponentForSlug({
-  slug,
-}: {
-  slug: string;
-}) {
-  const iconMap: Record<string, React.ElementType> = {
-    ficha_tecnica: FileText,
-    ficha_seguridad: ShieldAlert,
-    manual_instrucciones: BookOpenIcon,
-    instrucciones_trabajo: ListChecks,
-  };
-  const Component = iconMap[slug] ?? FileText;
-  return <Component className="size-4" />;
 }

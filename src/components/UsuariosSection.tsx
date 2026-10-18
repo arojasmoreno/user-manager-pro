@@ -4,11 +4,17 @@ import { PendingInvites } from "@/components/usuarios/PendingInvites";
 import { UserRowItem } from "@/components/usuarios/UserRowItem";
 import type { UserRow } from "@/components/usuarios/EditUserDialog";
 import { useUsuariosData } from "@/hooks/use-usuarios";
-import { Users } from "lucide-react";
+import { Users, MapPin } from "lucide-react";
 
 export function UsuariosSection() {
-  const { me, users, centers, pending, queryError, handleRevoke } =
-    useUsuariosData();
+  const {
+    me,
+    users,
+    centers,
+    pending,
+    queryError,
+    handleRevoke,
+  } = useUsuariosData();
 
   if (queryError) {
     return <ErrorState message={queryError.message} />;
@@ -29,6 +35,25 @@ export function UsuariosSection() {
       </div>
 
       <PendingInvites invites={pending} onRevoke={handleRevoke} />
+
+      {pending.length > 0 && (
+        <div className="space-y-2 border-b border-border pb-4">
+          <div className="flex items-center gap-2 text-xs font-ui text-muted-foreground">
+            <MapPin className="size-3.5" />
+            Invitaciones pendientes ({pending.length})
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {pending.map((invite) => (
+              <span
+                key={invite._id}
+                className="rounded-sm bg-primary/10 px-2.5 py-1 text-xs font-ui text-primary"
+              >
+                {invite.email}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Users table */}
       <section>

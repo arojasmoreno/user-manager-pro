@@ -12,7 +12,12 @@ export function AdminWorkspaceShell() {
   const [tab, setTab] = useState<AdminSubTab>("types");
 
   const adminTypes = useSafeQuery(api.fichaTypes.listTypesAdmin);
-  const types: AdminFichaType[] = adminTypes.data ?? [];
+  const types: AdminFichaType[] = adminTypes.data?.map(
+    (type): AdminFichaType => ({
+      ...type,
+      id: type.slug,
+    }),
+  ) ?? [];
 
   if (tab === "types") {
     return (
@@ -46,7 +51,7 @@ export function AdminWorkspaceShell() {
           </div>
         ) : types.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No hay tipos de ficha aún. Usa “Tipos de ficha” para crear el primero.
+            No hay tipos de ficha aún. Usa "Tipos de ficha" para crear el primero.
           </p>
         ) : null}
       </div>

@@ -34,8 +34,17 @@ export type FichaType = {
   hidden: boolean;
 };
 
-/** Un tipo con el número de fichas que lo usan (panel de administración). */
-export type AdminFichaType = FichaType & { fichaCount: number };
+/**
+ * Un tipo con el número de fichas que lo usan (panel de administración).
+ *
+ * `id` existe cuando el valor viene de una fila de base de datos; los tipos de
+ * serie puros llevan `id` como `FichaType.slug` de serie y se diferencian por
+ * `slug`.
+ */
+export type AdminFichaType = FichaType & { fichaCount: number; id: string };
+
+/** Alias ergonómico para el caso en que el tipo proporciona un identificador de base de datos. */
+export type AdminFichaTypeWithId = AdminFichaType;
 
 /** Los cuatro tipos de serie, con sus etiquetas y su icono. */
 export const DEFAULT_FICHA_TYPES: readonly FichaTypeRow[] = [

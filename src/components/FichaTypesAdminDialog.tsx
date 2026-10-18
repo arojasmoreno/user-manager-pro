@@ -1,7 +1,8 @@
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import type { AdminFichaType } from "@/lib/fichaTypes";
-import { FICHA_ICON_OPTIONS, fichaIcon, fichaIconTone } from "@/lib/fichaIcons";
+import { fichaIcon, fichaIconTone } from "@/lib/fichaIcons";
 import { cn } from "@/lib/utils";
 import {
   Dialog,
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { FICHA_ICON_OPTIONS } from "@/lib/fichaIcons";
 import { toast } from "sonner";
 import {
   Layers,
@@ -26,6 +28,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+type FichaIconKeyString = typeof FICHA_ICON_OPTIONS[number]["key"];
+
 type FichaTypesAdminMode = "list" | "create" | "edit";
 
 interface FichaTypesAdminDialogProps {
@@ -33,6 +37,10 @@ interface FichaTypesAdminDialogProps {
   /** Si el diálogo se usa desde la pestaña de fichas, donde los tipos son un complemento.
    *  Si es desde la pestaña de administración, el trigger puede ser distinto. */
   trigger?: React.ReactNode;
+}
+
+function adminId(type: AdminFichaType): Id<"fichaTypes"> {
+  return type.id as Id<"fichaTypes">;
 }
 
 export function FichaTypesAdminDialog({
@@ -44,22 +52,20 @@ export function FichaTypesAdminDialog({
   const retireFichaType = useMutation(api.fichasAdmin.retireFichaType);
   const restoreFichaType = useMutation(api.fichasAdmin.restoreFichaType);
 
+  const activeTypes = types.filter((t) => !t.hidden);
+  const retiredTypes = types.filter((t) => t.hidden);
+
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<FichaTypesAdminMode>("list");
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [icon, setIcon] = useState(FICHA_ICON_OPTIONS[0].key);
+  const [icon, setIcon] = useState<FichaIconKeyString>(FICHA_ICON_OPTIONS[0].key);
   const [busy, setBusy] = useState(false);
-
-  const activeTypes = types.filter((t) => !t.hidden);
-  const retiredTypes = types.filter((t) => t.hidden);
 
   const resetForm = () => {
     setName("");
     setIcon(FICHA_ICON_OPTIONS[0].key);
     setEditingSlug(null);
-    setEditingId(null);
     setMode("list");
   };
 
@@ -68,16 +74,19 @@ export function FichaTypesAdminDialog({
     setName("");
     setIcon(FICHA_ICON_OPTIONS[0].key);
     setEditingSlug(null);
-    setEditingId(null);
   };
 
   const startEdit = (type: AdminFichaType) => {
     setMode("edit");
     setEditingSlug(type.slug ?? null);
-    setEditingId(type._id ?? null);
     setName(type.name);
-    setIcon(type.icon);
+    setIcon(type.icon as FichaIconKeyString);
   };
+
+  const editingType =
+    editingSlug
+      ? types.find((t) => t.slug === editingSlug) ?? undefined
+      : undefined;
 
   const handleSubmit = async () => {
     if (!name.trim() || name.trim().length < 2) {
@@ -91,18 +100,13 @@ export function FichaTypesAdminDialog({
         toast.success(
           result.created ? "Tipo de ficha creado." : "Tipo de ficha recuperado.",
         );
-      } else {
-        const currentType =
-          types.find((t) => t._id === editingId) ??
-          types.find((t) => t.slug === editingSlug);
-        if (currentType) {
-          await updateFichaType({
-            typeId: currentType._id,
-            name: name.trim(),
-            icon,
-          });
-          toast.success("Tipo de ficha actualizado.");
-        }
+      } else if (editingType) {
+        await updateFichaType({
+          typeId: adminId(editingType),
+          name: name.trim(),
+          icon,
+        });
+        toast.success("Tipo de ficha actualizado.");
       }
       resetForm();
       setOpen(false);
@@ -125,7 +129,7 @@ export function FichaTypesAdminDialog({
     }
     setBusy(true);
     try {
-      await retireFichaType({ typeId: type._id });
+      await retireFichaType({ typeId: adminId(type) });
       toast.success("Tipo retirado.");
       resetForm();
     } catch (err) {
@@ -138,7 +142,7 @@ export function FichaTypesAdminDialog({
   const handleRestore = async (type: AdminFichaType) => {
     setBusy(true);
     try {
-      await restoreFichaType({ typeId: type._id });
+      await restoreFichaType({ typeId: adminId(type) });
       toast.success("Tipo recuperado.");
       resetForm();
     } catch (err) {
@@ -188,49 +192,52 @@ export function FichaTypesAdminDialog({
                 <ul className="mt-3 divide-y divide-border border border-border">
                   {activeTypes.map((type) => {
                     const Icon = fichaIcon(type.icon);
+                    const key = adminId(type);
                     return (
-                      <li
-                        key={type._id}
-                        className="flex items-center gap-3 bg-card px-3 py-2.5"
-                      >
-                        <span
-                          className={cn(
-                            "flex size-8 shrink-0 items-center justify-center rounded-sm border",
-                            fichaIconTone(type.icon),
-                          )}
+                      <li>
+                        <div
+                          key={key}
+                          className="flex items-center gap-3 bg-card px-3 py-2.5"
                         >
-                          <Icon className="size-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="block truncate text-sm font-medium">
-                            {type.name}
-                          </p>
-                          <p className="font-ui block text-[11px] text-muted-foreground">
-                            {type.builtIn ? "Tipo de serie" : "Creado por admin"}
-                            {type.fichaCount > 0 ? ` · ${type.fichaCount} fichas` : ""}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="font-ui h-8 cursor-pointer rounded-sm px-2 text-xs text-muted-foreground"
-                            onClick={() => startEdit(type)}
-                            disabled={busy}
+                          <span
+                            className={cn(
+                              "flex size-8 shrink-0 items-center justify-center rounded-sm border",
+                              fichaIconTone(type.icon),
+                            )}
                           >
-                            <Pencil className="size-3.5" />
-                            <span className="sr-only sm:not-sr-only">Editar</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="font-ui h-8 cursor-pointer rounded-sm px-2 text-xs text-destructive hover:text-destructive"
-                            onClick={() => handleRetire(type)}
-                            disabled={busy}
-                          >
-                            <Trash2 className="size-3.5" />
-                            <span className="sr-only">Retirar</span>
-                          </Button>
+                            <Icon className="size-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="block truncate text-sm font-medium">
+                              {type.name}
+                            </p>
+                            <p className="font-ui block text-[11px] text-muted-foreground">
+                              {type.builtIn ? "Tipo de serie" : "Creado por admin"}
+                              {type.fichaCount > 0 ? ` · ${type.fichaCount} fichas` : ""}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="font-ui h-8 cursor-pointer rounded-sm px-2 text-xs text-muted-foreground"
+                              onClick={() => startEdit(type)}
+                              disabled={busy}
+                            >
+                              <Pencil className="size-3.5" />
+                              <span className="sr-only sm:not-sr-only">Editar</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="font-ui h-8 cursor-pointer rounded-sm px-2 text-xs text-destructive hover:text-destructive"
+                              onClick={() => handleRetire(type)}
+                              disabled={busy}
+                            >
+                              <Trash2 className="size-3.5" />
+                              <span className="sr-only">Retirar</span>
+                            </Button>
+                          </div>
                         </div>
                       </li>
                     );
@@ -247,34 +254,37 @@ export function FichaTypesAdminDialog({
                 <ul className="mt-3 divide-y divide-border border border-border">
                   {retiredTypes.map((type) => {
                     const Icon = fichaIcon(type.icon);
+                    const key = adminId(type);
                     return (
-                      <li
-                        key={type._id}
-                        className="flex items-center gap-3 bg-muted/40 px-3 py-2.5"
-                      >
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-sm border border-border text-muted-foreground">
-                          <Icon className="size-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="block truncate text-sm text-muted-foreground">
-                            {type.name}
-                          </p>
-                          <p className="font-ui block text-[11px] text-muted-foreground">
-                            {type.fichaCount > 0
-                              ? `${type.fichaCount} fichas aún lo usan`
-                              : "Sin fichas asignadas"}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="font-ui h-8 cursor-pointer rounded-sm px-2 text-xs"
-                          onClick={() => handleRestore(type)}
-                          disabled={busy}
+                      <li>
+                        <div
+                          key={key}
+                          className="flex items-center gap-3 bg-muted/40 px-3 py-2.5"
                         >
-                          <RotateCcw className="size-3.5" />
-                          <span className="sr-only sm:not-sr-only">Recuperar</span>
-                        </Button>
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-sm border border-border text-muted-foreground">
+                            <Icon className="size-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="block truncate text-sm text-muted-foreground">
+                              {type.name}
+                            </p>
+                            <p className="font-ui block text-[11px] text-muted-foreground">
+                              {type.fichaCount > 0
+                                ? `${type.fichaCount} fichas aún lo usan`
+                                : "Sin fichas asignadas"}
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="font-ui h-8 cursor-pointer rounded-sm px-2 text-xs"
+                            onClick={() => handleRestore(type)}
+                            disabled={busy}
+                          >
+                            <RotateCcw className="size-3.5" />
+                            <span className="sr-only sm:not-sr-only">Recuperar</span>
+                          </Button>
+                        </div>
                       </li>
                     );
                   })}

@@ -8,6 +8,7 @@ import { fichaIcon, fichaIconTone } from "@/lib/fichaIcons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen } from "lucide-react";
 import { useState } from "react";
+import type { AdminFichaType } from "@/lib/fichaTypes";
 
 export function FichasSection() {
   const {
@@ -62,7 +63,7 @@ export function FichasSection() {
         </div>
         {isAdmin && (
           <div className="flex flex-wrap gap-2">
-            <FichaTypesDialog types={adminTypes} />
+            <FichaTypesDialog types={adminTypes.map((type): AdminFichaType => ({ ...type, id: type.slug }))} />
             <CreateFichaDialog centers={myCenters} types={types} />
           </div>
         )}

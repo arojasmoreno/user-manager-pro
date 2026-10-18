@@ -10,7 +10,7 @@ import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router";
 import { cn } from "@/lib/utils";
 
-export type WorkspaceTab = "fichas" | "asistente" | "centros" | "usuarios";
+export type WorkspaceTab = "fichas" | "asistente" | "admin" | "centros" | "usuarios";
 
 export function WorkspaceShell({
   tab,
@@ -37,6 +37,7 @@ export function WorkspaceShell({
     ...(ASSISTANT_ENABLED
       ? [{ id: "asistente" as const, label: "Asistente" }]
       : []),
+    { id: "admin", label: "Admin", adminOnly: true },
     { id: "centros", label: "Centros", adminOnly: true },
     { id: "usuarios", label: "Usuarios", adminOnly: true },
   ];
@@ -92,7 +93,7 @@ export function WorkspaceShell({
                     : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
               >
-                {t(tabItem.label)}
+                {tabItem.id === "admin" ? "Administración" : t(tabItem.label)}
               </button>
             ))}
           </nav>
