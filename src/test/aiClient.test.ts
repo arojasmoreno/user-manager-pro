@@ -132,12 +132,23 @@ describe("answerFromContext: con clave de Google", () => {
 
   test("llama al modelo vigente pasando la clave", async () => {
     await ask();
-    const [url] = lastCall();
+    const [url, init] = lastCall();
     expect(url).toContain("generativelanguage.googleapis.com");
     // Gemini 2.0 está apagado: el modelo por defecto debe ser uno servido hoy.
     expect(url).toContain(`${DEFAULT_GOOGLE_MODEL}:generateContent`);
     expect(url).not.toContain("gemini-2.0-flash");
-    expect(url).toContain("key=clave-de-prueba");
+    // La clave viaja en la cabecera que documenta Google, nunca en la URL.
+    expect(url).not.toContain("clave-de-prueba");
+    expect(init.headers["x-goog-api-key"]).toBe("clave-de-prueba");
+  });
+
+  test("una clave rechazada indica dónde se cambia", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      text: async () => "API_KEY_INVALID",
+    });
+    await expect(ask()).rejects.toThrow(/400.*Keys/s);
   });
 
   test("envía el catálogo y la pregunta, y exige responder en español", async () => {
