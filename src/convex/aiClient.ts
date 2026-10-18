@@ -123,11 +123,16 @@ async function completeWithGoogle(
   provider: AiProvider,
   request: CompletionRequest,
 ): Promise<string> {
+  // La clave viaja en la cabecera que documenta la API de Gemini, no en la URL:
+  // una query string acaba en registros de proxies y en mensajes de error.
   const res = await fetch(
-    `${GOOGLE_API_BASE}/models/${provider.model}:generateContent?key=${provider.key}`,
+    `${GOOGLE_API_BASE}/models/${provider.model}:generateContent`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": provider.key,
+      },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: request.system }] },
         contents: [{ role: "user", parts: [{ text: request.user }] }],
@@ -141,8 +146,14 @@ async function completeWithGoogle(
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
+    // 400/403 suelen ser la propia clave (API_KEY_INVALID): se dice dónde
+    // cambiarla en lugar de dejar el detalle crudo de Google como única pista.
+    const hint =
+      res.status === 400 || res.status === 403
+        ? " Revisa GOOGLE_API_KEY en la pestaña Keys del proyecto."
+        : "";
     throw new Error(
-      `${describeProvider(provider)} respondió ${res.status}. ${detail.slice(0, 300)}`,
+      `${describeProvider(provider)} respondió ${res.status}. ${detail.slice(0, 300)}${hint}`,
     );
   }
 
