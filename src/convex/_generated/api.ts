@@ -17,6 +17,7 @@ import type * as auth from "../auth.js";
 import type * as auth_emailOtp from "../auth/emailOtp.js";
 import type * as fichaIndex from "../fichaIndex.js";
 import type * as fichas from "../fichas.js";
+import type * as fichasAdmin from "../fichasAdmin.js";
 import type * as fichaTypes from "../fichaTypes.js";
 import type * as http from "../http.js";
 import type * as traducciones from "../traducciones.js";
@@ -39,6 +40,7 @@ const fullApi: ApiFromModules<{
   "auth/emailOtp": typeof auth_emailOtp;
   fichaIndex: typeof fichaIndex;
   fichas: typeof fichas;
+  fichasAdmin: typeof fichasAdmin;
   fichaTypes: typeof fichaTypes;
   http: typeof http;
   traducciones: typeof traducciones;
