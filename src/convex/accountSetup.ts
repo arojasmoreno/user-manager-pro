@@ -30,6 +30,9 @@ async function applyInviteForNewUser(
     .withIndex("email", (q) => q.eq("email", normalized))
     .first();
   if (invite === null || invite.status !== "pending") return;
+  // Una invitación caducada no otorga nada: hay que pedirle al administrador
+  // que la reenvíe, que es quien controla el plazo.
+  if (invite.expiresAt !== undefined && invite.expiresAt < Date.now()) return;
 
   await ctx.db.patch(userId, {
     role: invite.role,

@@ -203,14 +203,20 @@ describe("PendingInvites", () => {
 
   test("sin invitaciones no pinta nada", () => {
     const { container } = render(
-      <PendingInvites invites={[]} onRevoke={vi.fn()} />,
+      <PendingInvites invites={[]} onRevoke={vi.fn()} onResend={vi.fn()} />,
     );
 
     expect(container.innerHTML).toBe("");
   });
 
   test("lista cada invitación con su rol y el total", () => {
-    render(<PendingInvites invites={INVITES} onRevoke={vi.fn()} />);
+    render(
+      <PendingInvites
+        invites={INVITES}
+        onRevoke={vi.fn()}
+        onResend={vi.fn()}
+      />,
+    );
 
     expect(screen.getByText("Invitaciones pendientes")).toBeTruthy();
     expect(screen.getByText("(2)")).toBeTruthy();
@@ -222,7 +228,13 @@ describe("PendingInvites", () => {
 
   test("revocar devuelve el identificador de esa invitación", () => {
     const onRevoke = vi.fn();
-    render(<PendingInvites invites={INVITES} onRevoke={onRevoke} />);
+    render(
+      <PendingInvites
+        invites={INVITES}
+        onRevoke={onRevoke}
+        onResend={vi.fn()}
+      />,
+    );
 
     const botones = screen.getAllByRole("button", { name: "Revocar" });
     fireEvent.click(botones[1]);

@@ -1,21 +1,32 @@
 import type { Id } from "@/convex/_generated/dataModel";
 import { ROLES } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
-import { Mail } from "lucide-react";
+import { Mail, RotateCcw, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type PendingInvite = {
   _id: Id<"invites">;
   email: string;
   role: string;
+  /** Momento (ms) en que caduca; opcional por si la fila es antigua. */
+  expiresAt?: number;
 };
+
+/** Días (redondeados hacia arriba) que quedan de vida de la invitación. */
+function daysLeft(expiresAt?: number): number | null {
+  if (!expiresAt) return null;
+  return Math.max(1, Math.ceil((expiresAt - Date.now()) / 86_400_000));
+}
 
 export function PendingInvites({
   invites,
   onRevoke,
+  onResend,
 }: {
   invites: PendingInvite[];
   onRevoke: (inviteId: Id<"invites">) => void;
+  /** Renueva la invitación otros 7 días desde hoy. */
+  onResend: (inviteId: Id<"invites">) => void;
 }) {
   if (invites.length === 0) return null;
 
@@ -29,6 +40,7 @@ export function PendingInvites({
       <div className="mt-3 overflow-hidden rounded-sm border border-border">
         {invites.map((inv, idx) => {
           const first = inv.email.split("@")[0];
+          const left = daysLeft(inv.expiresAt);
           return (
             <div
               key={inv._id}
@@ -49,15 +61,33 @@ export function PendingInvites({
                 <span className="text-xs color-muted-foreground">
                   {inv.role === ROLES.ADMIN ? "Administrador" : "Usuario"}
                 </span>
+                {left !== null && (
+                  <span className="font-ui inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Timer className="size-3" />
+                    {left} {left === 1 ? "día" : "días"}
+                  </span>
+                )}
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="font-ui h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
-                onClick={() => onRevoke(inv._id)}
-              >
-                Revocar
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="font-ui h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => onResend(inv._id)}
+                  title="Renovar la invitación otros 7 días"
+                >
+                  <RotateCcw className="size-3.5" />
+                  <span className="hidden sm:inline">Reenviar</span>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="font-ui h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={() => onRevoke(inv._id)}
+                >
+                  Revocar
+                </Button>
+              </div>
             </div>
           );
         })}

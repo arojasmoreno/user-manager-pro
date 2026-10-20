@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { FichaType } from "@/lib/fichaTypes";
@@ -265,17 +266,21 @@ describe("FichaCard", () => {
     overrides: Partial<Parameters<typeof FichaCard>[0]> = {},
   ) {
     return render(
-      <FichaCard
-        ficha={FICHA}
-        types={[TIPO_TECNICA]}
-        icon={<span data-testid="icono" />}
-        iconTone="bg-muted"
-        myCenters={CENTERS}
-        centerNames={() => ["MDLZ Montornes"]}
-        translateFicha={sinCambios}
-        isAdmin={false}
-        {...overrides}
-      />,
+      // La tarjeta enlaza al visor con `Link` de react-router, así que necesita
+      // un router en el contexto.
+      <MemoryRouter>
+        <FichaCard
+          ficha={FICHA}
+          types={[TIPO_TECNICA]}
+          icon={<span data-testid="icono" />}
+          iconTone="bg-muted"
+          myCenters={CENTERS}
+          centerNames={() => ["MDLZ Montornes"]}
+          translateFicha={sinCambios}
+          isAdmin={false}
+          {...overrides}
+        />
+      </MemoryRouter>,
     );
   }
 
@@ -292,10 +297,12 @@ describe("FichaCard", () => {
   test("el enlace al documento abre en otra pestaña sin filtrar el referrer", () => {
     renderCard();
 
-    const link = screen.getByRole("link", { name: /Abrir documento/ });
+    const link = screen.getByRole("link", { name: /Pestaña nueva/ });
     expect(link.getAttribute("href")).toBe("https://example.com/a.pdf");
     expect(link.getAttribute("target")).toBe("_blank");
     expect(link.getAttribute("rel")).toContain("noopener");
+    // El enlace principal va al visor embebido, no a la URL directa.
+    expect(screen.getByRole("link", { name: /Ver documento/ })).toBeTruthy();
   });
 
   test("sin producto y sin fabricante no deja una línea vacía", () => {
@@ -311,12 +318,12 @@ describe("FichaCard", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
-  test("el administrador ve editar y borrar", () => {
+  test("el administrador ve el QR, editar y borrar", () => {
     renderCard({ isAdmin: true });
 
     expect(screen.getByText("Editar")).toBeTruthy();
-    // Editar + borrar (el borrado es un botón de solo icono).
-    expect(screen.getAllByRole("button")).toHaveLength(2);
+    // QR + editar + borrar (borrar es de solo icono).
+    expect(screen.getAllByRole("button")).toHaveLength(3);
   });
 
   test("solo el administrador ve el aviso de ficha sin traducir", () => {

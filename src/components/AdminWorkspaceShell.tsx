@@ -3,16 +3,18 @@ import { api } from "@/convex/_generated/api";
 import { useSafeQuery } from "@/hooks/use-safe-query";
 import { FichasAdminSection } from "@/components/FichasAdminSection";
 import { FichaTypesAdminDialog } from "@/components/FichaTypesAdminDialog";
+import { UsagePanel } from "@/components/UsagePanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fichaIcon, fichaIconTone } from "@/lib/fichaIcons";
 import { cn } from "@/lib/utils";
 import type { AdminFichaType } from "@/lib/fichaTypes";
 
-type AdminSubTab = "types" | "fichas";
+type AdminSubTab = "types" | "fichas" | "usage";
 
 const SUBTABS: { id: AdminSubTab; label: string }[] = [
   { id: "types", label: "Tipos de ficha" },
   { id: "fichas", label: "Fichas" },
+  { id: "usage", label: "Uso" },
 ];
 
 export function AdminWorkspaceShell() {
@@ -35,12 +37,14 @@ export function AdminWorkspaceShell() {
       <div>
         <p className="kicker">Administración</p>
         <h2 className="font-display mt-2 text-3xl font-semibold">
-          {tab === "types" ? "Tipos de ficha" : "Fichas"}
+          {tab === "types" ? "Tipos de ficha" : tab === "usage" ? "Uso del catálogo" : "Fichas"}
         </h2>
         <p className="mt-2 max-w-lg text-sm text-muted-foreground">
           {tab === "types"
             ? "Define los tipos y categorías con los que se clasifican las fichas del catálogo."
-            : "Gestión completa del catálogo: crea, edita, retira y organiza las fichas del sistema."}
+            : tab === "usage"
+              ? "Qué documentos se consultan y cuáles no se abren nunca."
+              : "Gestión completa del catálogo: crea, edita, retira y organiza las fichas del sistema."}
         </p>
       </div>
 
@@ -64,7 +68,9 @@ export function AdminWorkspaceShell() {
         ))}
       </div>
 
-      {tab === "fichas" ? (
+      {tab === "usage" ? (
+        <UsagePanel />
+      ) : tab === "fichas" ? (
         <FichasAdminSection />
       ) : (
         <div className="space-y-8">

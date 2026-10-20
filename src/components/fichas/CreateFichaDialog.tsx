@@ -43,6 +43,7 @@ export function CreateFichaDialog({
   const [productName, setProductName] = useState("");
   const [manufacturer, setManufacturer] = useState("");
   const [url, setUrl] = useState("");
+  const [contentText, setContentText] = useState("");
   const [centerIds, setCenterIds] = useState<Id<"workCenters">[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -58,6 +59,7 @@ export function CreateFichaDialog({
     setProductName("");
     setManufacturer("");
     setUrl("");
+    setContentText("");
     setCenterIds([]);
   };
 
@@ -76,6 +78,7 @@ export function CreateFichaDialog({
         productName: productName.trim() || undefined,
         manufacturer: manufacturer.trim() || undefined,
         url: url.trim(),
+        contentText: contentText.trim() || undefined,
         workCenterIds: centerIds,
       });
       toast.success("Ficha añadida al catálogo.");
@@ -158,6 +161,22 @@ export function CreateFichaDialog({
           </div>
 
           <DocumentSource url={url} onUrlChange={setUrl} />
+
+          <div className="grid gap-2">
+            <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
+              Texto de búsqueda (opcional)
+            </Label>
+            <textarea
+              className="font-ui min-h-16 w-full rounded-sm border bg-transparent px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 dark:focus:ring-ring/30"
+              value={contentText}
+              onChange={(e) => setContentText(e.target.value)}
+              placeholder="Palabras clave o extracto del documento para encontrarlo por contenido…"
+            />
+            <p className="font-ui text-[11px] leading-relaxed text-muted-foreground">
+              Se buscará también dentro de este texto, además del título,
+              producto y fabricante.
+            </p>
+          </div>
 
           <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
             <div className="grid gap-2">

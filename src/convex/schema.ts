@@ -76,9 +76,28 @@ const schema = defineSchema(
       url: v.string(),
       workCenterIds: v.array(v.id("workCenters")),
       active: v.boolean(),
+      /** Total de veces que se ha abierto el documento; impulsa el panel de uso. */
+      openCount: v.optional(v.number()),
+      /** Último instante (ms) en que alguien abrió el documento. */
+      lastOpenedAt: v.optional(v.number()),
+      /** Texto de contenido/palabras clave para buscar dentro del documento. */
+      contentText: v.optional(v.string()),
     })
       .index("active", ["active"])
       .index("byKind", ["kind"]),
+
+    // Versiones anteriores del documento de una ficha. Se guardan automáticamente
+    // al cambiar la URL, para poder consultar (y abrir) revisiones previas sin
+    // perder el histórico.
+    fichaVersions: defineTable({
+      fichaId: v.id("fichas"),
+      url: v.string(),
+      title: v.string(),
+      productName: v.optional(v.string()),
+      manufacturer: v.optional(v.string()),
+      /** Momento (ms) en que se guardó esta versión (al sustituir la anterior). */
+      at: v.number(),
+    }).index("byFicha", ["fichaId"]),
 
     // Admin-created invitations (admin "adds users" by email)
     invites: defineTable({
@@ -91,6 +110,8 @@ const schema = defineSchema(
         v.literal("accepted"),
         v.literal("revoked"),
       ),
+      /** Momento (ms) en que caduca la invitación; pasado él, no se puede usar. */
+      expiresAt: v.optional(v.number()),
     }).index("email", ["email"]),
 
     // One translated version of a ficha's own fields. Created either by the

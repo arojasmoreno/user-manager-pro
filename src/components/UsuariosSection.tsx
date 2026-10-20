@@ -4,7 +4,8 @@ import { PendingInvites } from "@/components/usuarios/PendingInvites";
 import { UserRowItem } from "@/components/usuarios/UserRowItem";
 import type { UserRow } from "@/components/usuarios/EditUserDialog";
 import { useUsuariosData } from "@/hooks/use-usuarios";
-import { Users, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users, MapPin, RotateCcw, Timer } from "lucide-react";
 
 export function UsuariosSection() {
   const {
@@ -12,8 +13,10 @@ export function UsuariosSection() {
     users,
     centers,
     pending,
+    expired,
     queryError,
     handleRevoke,
+    handleResend,
   } = useUsuariosData();
 
   if (queryError) {
@@ -34,7 +37,48 @@ export function UsuariosSection() {
         <InviteDialog centers={centers.data ?? []} />
       </div>
 
-      <PendingInvites invites={pending} onRevoke={handleRevoke} />
+      <PendingInvites
+        invites={pending}
+        onRevoke={handleRevoke}
+        onResend={handleResend}
+      />
+
+      {expired.length > 0 && (
+        <section>
+          <h3 className="font-ui flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Timer className="size-4" />
+            Caducadas
+            <span>({expired.length})</span>
+          </h3>
+          <p className="mt-2 max-w-lg text-xs leading-relaxed text-muted-foreground">
+            Estas invitaciones ya no permiten entrar. Pulsa «Reenviar» para
+            darles otros 7 días.
+          </p>
+          <div className="mt-3 overflow-hidden rounded-sm border border-border">
+            {expired.map((inv, idx) => (
+              <div
+                key={inv._id}
+                className={`flex flex-col gap-2 bg-card p-4 sm:flex-row sm:items-center sm:justify-between ${
+                  idx > 0 ? "border-t border-border" : ""
+                }`}
+              >
+                <span className="text-sm text-muted-foreground">
+                  {inv.email}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="font-ui h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => handleResend(inv._id)}
+                >
+                  <RotateCcw className="size-3.5" />
+                  Reenviar
+                </Button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {pending.length > 0 && (
         <div className="space-y-2 border-b border-border pb-4">

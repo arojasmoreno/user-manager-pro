@@ -84,7 +84,8 @@ export function FichasAdminSection() {
         return (
           f.title.toLowerCase().includes(q) ||
           (f.productName ?? "").toLowerCase().includes(q) ||
-          (f.manufacturer ?? "").toLowerCase().includes(q)
+          (f.manufacturer ?? "").toLowerCase().includes(q) ||
+          (f.contentText ?? "").toLowerCase().includes(q)
         );
       })
       .sort((a, b) => a.title.localeCompare(b.title));

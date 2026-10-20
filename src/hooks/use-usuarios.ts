@@ -18,11 +18,20 @@ export function useUsuariosData() {
   const centers = useSafeQuery(api.access.listCenters);
   const invites = useSafeQuery(api.access.listInvites);
   const revokeInvite = useMutation(api.access.revokeInvite);
+  const resendInvite = useMutation(api.access.resendInvite);
 
   const queryError =
     users.error ?? centers.error ?? invites.error ?? me.error ?? null;
 
-  const pending = (invites.data ?? []).filter((i) => i.status === "pending");
+  const now = Date.now();
+  // Una invitación pendiente caducada no sirve: se muestra aparte para que el
+  // administrador sepa que hay que reenviarla en lugar de esperar en balde.
+  const pending = (invites.data ?? []).filter(
+    (i) => i.status === "pending" && (i.expiresAt ?? Infinity) > now,
+  );
+  const expired = (invites.data ?? []).filter(
+    (i) => i.status === "pending" && (i.expiresAt ?? Infinity) <= now,
+  );
 
   const handleRevoke = async (inviteId: Id<"invites">) => {
     try {
@@ -33,5 +42,24 @@ export function useUsuariosData() {
     }
   };
 
-  return { me, users, centers, invites, pending, queryError, handleRevoke };
+  const handleResend = async (inviteId: Id<"invites">) => {
+    try {
+      await resendInvite({ inviteId });
+      toast.success("Invitación reenviada: vuelve a tener 7 días.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al reenviar.");
+    }
+  };
+
+  return {
+    me,
+    users,
+    centers,
+    invites,
+    pending,
+    expired,
+    queryError,
+    handleRevoke,
+    handleResend,
+  };
 }

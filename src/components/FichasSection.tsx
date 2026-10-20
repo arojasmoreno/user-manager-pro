@@ -30,12 +30,14 @@ export function FichasSection() {
     if (filter !== "all" && f.kind !== filter) return false;
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    // Se busca en los dos idiomas: el de la persona y el original.
+    // Se busca en los dos idiomas: el de la persona y el original, y también
+    // dentro del texto de contenido del documento (si el admin lo rellenó).
     const shown = translateFicha(f);
     return [
       f.title,
       f.productName,
       f.manufacturer,
+      f.contentText,
       shown.title,
       shown.productName,
       shown.manufacturer,

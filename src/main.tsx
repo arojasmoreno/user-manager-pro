@@ -18,6 +18,7 @@ import './index.css';
 const Landing = lazy(() => import('./pages/Landing.tsx'));
 const AuthPage = lazy(() => import('./pages/Auth.tsx'));
 const Dashboard = lazy(() => import('./pages/Dashboard.tsx'));
+const FichaViewer = lazy(() => import('./pages/FichaViewer.tsx'));
 const NotFound = lazy(() => import('./pages/NotFound.tsx'));
 
 function RouteLoading() {
@@ -129,6 +130,15 @@ export function AppRoutes() {
                 </RequireAuth>
               }
             />
+            {/* Visor de una ficha: lo que abre el QR pegado en la máquina. */}
+            <Route
+              path="/fichas/:id"
+              element={
+                <RequireAuth redirectImmediately>
+                  <FichaViewer />
+                </RequireAuth>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
@@ -159,6 +169,18 @@ function RouteSyncer() {
   }, []);
 
   return null;
+}
+
+// Registra el service worker (sólo en producción y si el navegador lo
+// soporta). Cacha el armazón de la app y el último PDF consultado para poder
+// abrirlo sin cobertura en planta. En desarrollo no se registra, para no
+// interferir con el recargado en caliente.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('[PWA] No se pudo registrar el service worker:', err);
+    });
+  });
 }
 
 createRoot(document.getElementById('root')!).render(

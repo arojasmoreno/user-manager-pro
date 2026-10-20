@@ -10,6 +10,9 @@ import { ROLES, roleValidator } from "./schema";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+/** Cuánto vive una invitación desde que se crea o se reenvía. */
+export const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 export async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
   if (userId === null) {
@@ -369,10 +372,12 @@ export const inviteUser = mutation({
       .first();
 
     if (existing !== null && existing.status === "pending") {
-      // Update the pending invite with the latest role/center configuration.
+      // Update the pending invite with the latest role/center configuration and
+      // restart the clock, so re-inviting also renews the deadline.
       await ctx.db.patch(existing._id, {
         role: args.role,
         centerIds: args.centerIds,
+        expiresAt: Date.now() + INVITE_TTL_MS,
         ...(args.name !== undefined ? { name: args.name.trim() || undefined } : null),
       });
       return { inviteId: existing._id, created: false };
@@ -388,8 +393,30 @@ export const inviteUser = mutation({
       role: args.role,
       centerIds: args.centerIds,
       status: "pending",
+      expiresAt: Date.now() + INVITE_TTL_MS,
     });
     return { inviteId, created: true };
+  },
+});
+
+/**
+ * Extiende la caducidad de una invitación pendiente desde hoy. El correo no se
+ * reenvía automáticamente (no hay servicio de correo configurado); el
+ * administrador vuelve a darle al botón y el enlace sigue siendo el mismo.
+ */
+export const resendInvite = mutation({
+  args: { inviteId: v.id("invites") },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const invite = await ctx.db.get(args.inviteId);
+    if (invite === null) throw new Error("Invitación no encontrada.");
+    if (invite.status !== "pending") {
+      throw new Error("Solo se pueden reenviar invitaciones pendientes.");
+    }
+    const expiresAt = Date.now() + INVITE_TTL_MS;
+    await ctx.db.patch(args.inviteId, { expiresAt });
+    return expiresAt;
   },
 });
 
@@ -401,6 +428,7 @@ export const listInvites = query({
       email: v.string(),
       role: roleValidator,
       status: v.string(),
+      expiresAt: v.optional(v.number()),
       _creationTime: v.number(),
     }),
   ),
@@ -412,6 +440,7 @@ export const listInvites = query({
       email: i.email,
       role: i.role,
       status: i.status,
+      expiresAt: i.expiresAt,
       _creationTime: i._creationTime,
     }));
   },

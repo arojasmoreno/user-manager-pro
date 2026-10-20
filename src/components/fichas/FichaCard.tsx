@@ -1,11 +1,13 @@
 import type { Doc } from "@/convex/_generated/dataModel";
 import { EditFichaDialog } from "@/components/fichas/EditFichaDialog";
 import { DeleteFichaButton } from "@/components/fichas/DeleteFichaButton";
+import { FichaQrDialog } from "@/components/fichas/FichaQrDialog";
 import { fichaTypeLabel, type FichaType } from "@/lib/fichaTypes";
 import type { FichaFields, TranslatedFields } from "@/hooks/use-ficha-translations";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Eye } from "lucide-react";
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import { cn } from "@/lib/utils";
 
 type CenterDoc = Doc<"workCenters">;
@@ -84,18 +86,27 @@ export function FichaCard({
         ))}
       </div>
 
-      <div className="mt-5 flex items-center gap-2 border-t border-border pt-4">
+      <div className="mt-5 flex items-center gap-3 border-t border-border pt-4">
+        {/* El visor embebe el PDF en la app y registra la apertura. */}
+        <Link
+          to={`/fichas/${ficha._id}`}
+          className="font-ui inline-flex items-center gap-1.5 text-xs font-medium underline-offset-4 hover:underline"
+        >
+          <Eye className="size-3" />
+          Ver documento
+        </Link>
         <a
           href={ficha.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="font-ui inline-flex items-center gap-1.5 text-xs font-medium underline-offset-4 hover:underline"
+          className="font-ui inline-flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
         >
-          Abrir documento
+          Pestaña nueva
           <ExternalLink className="size-3" />
         </a>
         {isAdmin && (
           <div className="ml-auto flex items-center gap-1">
+            <FichaQrDialog fichaId={ficha._id} title={shown.title} />
             <EditFichaDialog ficha={ficha} centers={myCenters} types={types} />
             <DeleteFichaButton fichaId={ficha._id} />
           </div>

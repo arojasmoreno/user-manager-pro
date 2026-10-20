@@ -27,6 +27,8 @@ import {
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useSafeQuery } from "@/hooks/use-safe-query";
+import { History, ExternalLink } from "lucide-react";
 
 type CenterDoc = Doc<"workCenters">;
 type FichaDoc = Doc<"fichas">;
@@ -47,10 +49,17 @@ export function EditFichaDialog({
   const [productName, setProductName] = useState(ficha.productName ?? "");
   const [manufacturer, setManufacturer] = useState(ficha.manufacturer ?? "");
   const [url, setUrl] = useState(ficha.url);
+  const [contentText, setContentText] = useState(ficha.contentText ?? "");
   const [centerIds, setCenterIds] = useState<Id<"workCenters">[]>(
     ficha.workCenterIds,
   );
   const [busy, setBusy] = useState(false);
+
+  // Histórico de revisiones del documento (sólo se pide con el diálogo abierto).
+  const versions = useSafeQuery(
+    api.fichas.listVersions,
+    open ? { fichaId: ficha._id } : "skip",
+  );
 
   // Seed the form from the ficha when the dialog opens, so the fields always
   // reflect the latest saved values without an effect.
@@ -60,6 +69,7 @@ export function EditFichaDialog({
     setProductName(ficha.productName ?? "");
     setManufacturer(ficha.manufacturer ?? "");
     setUrl(ficha.url);
+    setContentText(ficha.contentText ?? "");
     setCenterIds(ficha.workCenterIds);
     setOpen(true);
   };
@@ -80,6 +90,7 @@ export function EditFichaDialog({
         productName: productName.trim() || undefined,
         manufacturer: manufacturer.trim() || undefined,
         url: url.trim(),
+        contentText: contentText.trim() || undefined,
         workCenterIds: centerIds,
       });
       toast.success("Ficha actualizada.");
@@ -172,6 +183,21 @@ export function EditFichaDialog({
           <DocumentSource url={url} onUrlChange={setUrl} />
           <div className="grid gap-2">
             <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
+              Texto de búsqueda (opcional)
+            </Label>
+            <textarea
+              className="font-ui min-h-16 w-full rounded-sm border bg-transparent px-3 py-2 text-sm focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/50 dark:focus:ring-ring/30"
+              value={contentText}
+              onChange={(e) => setContentText(e.target.value)}
+              placeholder="Palabras clave o extracto del documento para encontrarlo por contenido…"
+            />
+            <p className="font-ui text-[11px] leading-relaxed text-muted-foreground">
+              Se buscará también dentro de este texto, además del título,
+              producto y fabricante.
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <Label className="font-ui text-xs uppercase tracking-wider text-muted-foreground">
               Centros de trabajo
             </Label>
             <CenterPicker
@@ -185,6 +211,43 @@ export function EditFichaDialog({
               función está activa (ver `features.ts`). */}
           {TRANSLATIONS_ENABLED && (
             <FichaTranslations fichaId={ficha._id} enabled={open} />
+          )}
+
+          {versions.data && versions.data.length > 0 && (
+            <div className="grid gap-2 border-t border-border pt-4">
+              <Label className="font-ui flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+                <History className="size-3.5" />
+                Versiones anteriores ({versions.data.length})
+              </Label>
+              <ul className="divide-y divide-border border border-border">
+                {versions.data.map((v) => (
+                  <li
+                    key={v._id}
+                    className="flex items-center justify-between gap-2 bg-background px-3 py-2"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs">{v.title}</span>
+                      <span className="font-ui text-[10px] text-muted-foreground">
+                        {new Date(v.at).toLocaleString("es-ES")}
+                      </span>
+                    </span>
+                    <a
+                      href={v.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-ui inline-flex shrink-0 items-center gap-1 text-[11px] underline-offset-4 hover:underline"
+                    >
+                      Abrir
+                      <ExternalLink className="size-3" />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <p className="font-ui text-[11px] leading-relaxed text-muted-foreground">
+                Se guarda automáticamente la versión anterior cada vez que
+                cambias el documento.
+              </p>
+            </div>
           )}
         </div>
         <DialogFooter>

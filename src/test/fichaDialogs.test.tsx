@@ -376,12 +376,21 @@ describe("EditFichaDialog", () => {
   test("solo pide las traducciones cuando el diálogo está abierto", () => {
     renderEdit();
 
-    // Cerrado, el panel de traducciones ni siquiera está montado.
-    expect(h.queryArgs).toEqual([]);
+    // Cerrado, el panel de traducciones ni siquiera está montado; la única
+    // consulta registrada es la del histórico de versiones, saltada («skip»).
+    expect(h.queryArgs).toEqual(["skip"]);
 
     fireEvent.click(screen.getByText("Editar"));
 
-    expect(h.queryArgs).toEqual([{ fichaId: "f1" }]);
+    // Al abrir se desbloquea la consulta de versiones y se monta el panel de
+    // traducciones, que pide las suyas. Ambas van dirigidas a la ficha.
+    expect(h.queryArgs).toEqual([
+      "skip",
+      { fichaId: "f1" },
+      { fichaId: "f1" },
+    ]);
+    // La última es la de traducciones del panel montado.
+    expect(h.queryArgs[2]).toEqual({ fichaId: "f1" });
   });
 
   test("enseña el error del servidor al guardar", async () => {

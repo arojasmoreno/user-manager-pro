@@ -163,8 +163,11 @@ describe("traducciones apagadas por interruptor", () => {
     );
 
     // La séptima consulta (listTranslations) se llama con «skip», así que no
-    // se abre una suscripción a traducciones en cada carga del catálogo.
-    expect(h.calls).toHaveLength(7);
+    // se abre una suscripción a traducciones en cada carga del catálogo. La
+    // octava es la del histórico de versiones del diálogo de edición, también
+    // saltada mientras el diálogo siga cerrado.
+    expect(h.calls).toHaveLength(8);
     expect(h.calls[6].args).toBe("skip");
+    expect(h.calls[7].args).toBe("skip");
   });
 });
