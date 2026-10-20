@@ -100,7 +100,15 @@ class RootErrorBoundary extends React.Component<
   }
 }
 
-const convexUrl = import.meta.env.VITE_CONVEX_URL;
+// URL del deployment de Convex al que se conecta la app.
+//
+// Prioridad: la variable `VITE_CONVEX_URL` del entorno y, si el build no la
+// hornea (el despliegue de producción no siempre la inyecta), el endpoint
+// propio documentado en el README. Sin esta reserva, si falta la variable el
+// cliente Convex queda anulado y `useAuth` lanza «Could not find ConvexProvider»
+// en el arranque, con lo que la pantalla de acceso nunca llega a pintarse.
+const FALLBACK_CONVEX_URL = 'https://gallant-ladybug-133.convex.cloud';
+const convexUrl = import.meta.env.VITE_CONVEX_URL || FALLBACK_CONVEX_URL;
 
 let convex: ConvexReactClient | null = null;
 
