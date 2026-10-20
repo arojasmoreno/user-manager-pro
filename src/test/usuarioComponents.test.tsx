@@ -214,9 +214,9 @@ describe("PendingInvites", () => {
 
     expect(screen.getByText("Invitaciones pendientes")).toBeTruthy();
     expect(screen.getByText("(2)")).toBeTruthy();
-    expect(screen.getByText("nuevo@example.com")).toBeTruthy();
+    expect(screen.getByText("nuevo")).toBeTruthy();
     expect(screen.getByText("Usuario")).toBeTruthy();
-    expect(screen.getByText("jefa@example.com")).toBeTruthy();
+    expect(screen.getByText("jefa")).toBeTruthy();
     expect(screen.getByText("Administrador")).toBeTruthy();
   });
 

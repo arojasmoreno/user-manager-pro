@@ -4,7 +4,9 @@ import {
   DEFAULT_GOOGLE_MODEL,
   answerFromContext,
   answerLanguageFor,
+  cloudTranslationLanguage,
   resolveProvider,
+  resolveTranslationKey,
   translateFields,
 } from "@/convex/aiClient";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -269,6 +271,8 @@ describe("answerLanguageFor", () => {
 describe("translateFields", () => {
   beforeEach(() => {
     vi.stubEnv("GOOGLE_API_KEY", "clave-de-prueba");
+    // Sin clave de Cloud Translation, estos tests ejercitan el respaldo del modelo.
+    vi.stubEnv("GOOGLE_TRANSLATE_API_KEY", "");
   });
 
   const reply = (text: string) =>
@@ -340,6 +344,150 @@ describe("translateFields", () => {
         targetName: "Français",
       }),
     ).rejects.toThrow(/gemini-3\.8-flash.*404/);
+  });
+});
+
+describe("resolveTranslationKey", () => {
+  test("lee y limpia GOOGLE_TRANSLATE_API_KEY", () => {
+    expect(
+      resolveTranslationKey({ GOOGLE_TRANSLATE_API_KEY: "  clave-tradu  " }),
+    ).toBe("clave-tradu");
+  });
+
+  test("sin clave de Cloud Translation no se intenta la API de traducción", () => {
+    expect(resolveTranslationKey({})).toBeNull();
+    expect(resolveTranslationKey({ GOOGLE_TRANSLATE_API_KEY: "   " })).toBeNull();
+    // La clave de Gemini no vale por sí sola: la v2 es otro producto de Google
+    // Cloud y pide la suya.
+    expect(resolveTranslationKey({ GOOGLE_API_KEY: "otra" })).toBeNull();
+  });
+});
+
+describe("cloudTranslationLanguage", () => {
+  test("usa los códigos que la v2 reconoce", () => {
+    expect(cloudTranslationLanguage("es-ES")).toBe("es");
+    expect(cloudTranslationLanguage("fr-FR")).toBe("fr");
+    expect(cloudTranslationLanguage("en-GB")).toBe("en");
+    expect(cloudTranslationLanguage("ar-MA")).toBe("ar");
+    expect(cloudTranslationLanguage("mnk")).toBe("mnk");
+  });
+
+  test("un locale con región no listada cae al idioma base", () => {
+    expect(cloudTranslationLanguage("de-DE")).toBe("de");
+    expect(cloudTranslationLanguage("zh-CN")).toBe("zh");
+  });
+});
+
+describe("translateFields con Google Cloud Translation v2", () => {
+  beforeEach(() => {
+    vi.stubEnv("GOOGLE_TRANSLATE_API_KEY", "clave-tradu");
+    // Clave del modelo de IA disponible para el respaldo.
+    vi.stubEnv("GOOGLE_API_KEY", "clave-modelo");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const cloudReply = (translatedText: string[]) =>
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          translations: translatedText.map((text) => ({ translatedText: text })),
+        },
+      }),
+      text: async () => "",
+    });
+
+  test("traduce todos los campos en una sola llamada a la v2", async () => {
+    cloudReply(["Détergent désinfectant", "Hypofoam"]);
+    const result = await translateFields({
+      fields: { title: "Detergente desinfectante", productName: "Hypofoam" },
+      targetLocale: "fr-FR",
+      targetName: "Français",
+    });
+
+    expect(result).toEqual({
+      title: "Détergent désinfectant",
+      productName: "Hypofoam",
+      manufacturer: undefined,
+    });
+
+    const [url, init] = lastCall();
+    expect(url).toContain("translation.googleapis.com/language/translate/v2");
+    expect(url).toContain("key=clave-tradu");
+    const body = JSON.parse(init.body);
+    expect(body.q).toEqual(["Detergente desinfectante", "Hypofoam"]);
+    expect(body.source).toBe("es");
+    expect(body.target).toBe("fr");
+    expect(body.format).toBe("text");
+    // La API atendió la petición: una sola llamada y sin avisos.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test("recupera los caracteres HTML que la API devuelve escapados", async () => {
+    cloudReply(["Lejía &amp; detergente &#39;pur&#39;"]);
+    const result = await translateFields({
+      fields: { title: "Lejía y detergente" },
+      targetLocale: "en-GB",
+      targetName: "English",
+    });
+    expect(result.title).toBe("Lejía & detergente 'pur'");
+  });
+
+  test("si la v2 no admite el idioma, recurre al modelo de IA", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      text: async () => "Invalid value for target: mnk",
+    });
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        candidates: [
+          {
+            content: {
+              parts: [{ text: '{"title":"Detergente desinfectante (Mandinka)"}' }],
+            },
+          },
+        ],
+      }),
+      text: async () => "",
+    });
+
+    const result = await translateFields({
+      fields: { title: "Detergente desinfectante" },
+      targetLocale: "mnk",
+      targetName: "Mandinka",
+    });
+
+    // El modelo responde en su lugar: la traducción no se queda sin hacer.
+    expect(result.title).toBe("Detergente desinfectante (Mandinka)");
+    const calls = fetchMock.mock.calls as unknown as FetchArgs[];
+    expect(calls).toHaveLength(2);
+    expect(calls[0][0]).toContain("translation.googleapis.com");
+    expect(calls[1][0]).toContain("generativelanguage.googleapis.com");
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("mnk"));
+  });
+
+  test("explica los dos caminos cuando ni la API ni el modelo pueden", async () => {
+    vi.stubEnv("GOOGLE_API_KEY", "");
+    vi.stubEnv("VLY_INTEGRATION_KEY", "");
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      text: async () => "API_KEY_INVALID",
+    });
+
+    await expect(
+      translateFields({
+        fields: { title: "Detergente" },
+        targetLocale: "fr-FR",
+        targetName: "Français",
+      }),
+    ).rejects.toThrow(/translate\/v2[\s\S]*403[\s\S]*GOOGLE_API_KEY/);
   });
 });
 

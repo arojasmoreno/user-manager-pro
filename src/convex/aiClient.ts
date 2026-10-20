@@ -12,12 +12,17 @@
  *    la pasarela de IA, que da acceso a cualquier modelo sin abrir una cuenta
  *    nueva. Modelo: `VLY_AI_MODEL`.
  *
- * La clave se lee siempre aquí, en el servidor: nunca viaja al navegador.
+ * La traducción de fichas va antes por la API Cloud Translation v2
+ * (`apis/Google.Cloud.Translation.V2`, con `GOOGLE_TRANSLATE_API_KEY`); los
+ * modelos anteriores responden al asistente y sirven de respaldo cuando la API
+ * de traducción no puede atender una petición.
+ *
+ * Las claves se leen siempre aquí, en el servidor: nunca viajan al navegador.
  */
 
 import { ConvexError } from "convex/values";
 import { createVlyIntegrations } from "@vly-ai/integrations";
-import { LOCALES } from "../i18n/locales";
+import { LOCALES, SOURCE_LOCALE } from "../i18n/locales";
 
 const GOOGLE_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
@@ -202,14 +207,182 @@ type TranslateableFields = {
   manufacturer?: string;
 };
 
+// ---------------------------------------------------------------------------
+// Traducción de fichas — Google Cloud Translation v2
+// ---------------------------------------------------------------------------
+
+/** Ruta de Cloud Translation - Basic (v2), «apis/Google.Cloud.Translation.V2». */
+const CLOUD_TRANSLATION_URL =
+  "https://translation.googleapis.com/language/translate/v2";
+
+/**
+ * Clave de Google Cloud con la API Cloud Translation habilitada. Es un producto
+ * distinto de Gemini (AI Studio), así que tiene su propia variable: mientras
+ * exista, las fichas se traducen con esta API; si no, se usan los modelos del
+ * bloque siguiente. La clave se lee solo en el servidor.
+ */
+export function resolveTranslationKey(
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  return env.GOOGLE_TRANSLATE_API_KEY?.trim() || null;
+}
+
+/**
+ * Locale de la app → código que la v2 reconoce (lista de Language Support).
+ * Google no lista en-GB ni ar-MA para el modelo NMT, así que se mandan como
+ * idioma base; mnk sí se manda tal cual, y si la API lo rechaza la traducción
+ * cae al modelo de IA (el `translateFields` de más abajo).
+ */
+const CLOUD_LANGUAGE_BY_LOCALE: Record<string, string> = {
+  "es-ES": "es",
+  "fr-FR": "fr",
+  "en-GB": "en",
+  "ar-MA": "ar",
+  mnk: "mnk",
+};
+
+export function cloudTranslationLanguage(locale: string): string {
+  return CLOUD_LANGUAGE_BY_LOCALE[locale] ?? locale.split("-")[0] ?? locale;
+}
+
+/** La v2 devuelve los textos con los caracteres HTML escapados (&amp;, &#39;…). */
+function unescapeHtml(text: string): string {
+  return text
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+async function translateViaCloudTranslation(params: {
+  key: string;
+  fields: TranslateableFields;
+  targetLocale: string;
+}): Promise<TranslateableFields> {
+  const { title, productName, manufacturer } = params.fields;
+  // Todos los campos van en una sola llamada: `q` acepta hasta 128 textos.
+  const entries: {
+    field: "title" | "productName" | "manufacturer";
+    text: string;
+  }[] = [{ field: "title", text: title }];
+  if (productName) entries.push({ field: "productName", text: productName });
+  if (manufacturer) entries.push({ field: "manufacturer", text: manufacturer });
+
+  // La v2 documenta la clave como parámetro `key` de la URL (la referencia del
+  // método no la recoge en cabecera). La petición sale del servidor Convex y
+  // solo la ven Google y los registros del propio servidor.
+  const res = await fetch(
+    `${CLOUD_TRANSLATION_URL}?key=${encodeURIComponent(params.key)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q: entries.map((entry) => entry.text),
+        source: cloudTranslationLanguage(SOURCE_LOCALE),
+        target: cloudTranslationLanguage(params.targetLocale),
+        format: "text",
+      }),
+    },
+  );
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(
+      `Google Cloud Translation (translate/v2) respondió ${res.status}. ${detail.slice(0, 300)}`,
+    );
+  }
+
+  const data = (await res.json()) as {
+    data?: { translations?: { translatedText?: string }[] };
+  };
+  const translations = data.data?.translations ?? [];
+  if (translations.length !== entries.length) {
+    throw new Error("Google Cloud Translation no devolvió la traducción completa.");
+  }
+
+  const clean = (value: string | undefined): string | undefined => {
+    const trimmed = unescapeHtml(value ?? "").trim();
+    return trimmed === "" ? undefined : trimmed;
+  };
+  const translated: {
+    title?: string;
+    productName?: string;
+    manufacturer?: string;
+  } = {};
+  entries.forEach((entry, index) => {
+    translated[entry.field] = clean(translations[index]?.translatedText);
+  });
+  if (!translated.title) {
+    throw new Error("Google Cloud Translation no devolvió el título traducido.");
+  }
+  return {
+    title: translated.title,
+    productName: translated.productName,
+    manufacturer: translated.manufacturer,
+  };
+}
+
 /**
  * Traduce los campos editables de una ficha al idioma pedido.
+ *
+ * Primero usa la API de traducción de Google (v2). Si esta no puede atender la
+ * petición —idioma que aún no admite, clave de Google Cloud sin la API
+ * habilitada, cuota agotada…— se avisa en el servidor y se recurre al modelo de
+ * IA, para que un problema de configuración de la API no deje fichas sin
+ * traducir.
+ */
+export async function translateFields(params: {
+  fields: TranslateableFields;
+  targetLocale: string;
+  targetName: string;
+}): Promise<TranslateableFields> {
+  const key = resolveTranslationKey();
+  let cloudError: string | null = null;
+  if (key !== null) {
+    try {
+      return await translateViaCloudTranslation({
+        key,
+        fields: params.fields,
+        targetLocale: params.targetLocale,
+      });
+    } catch (err) {
+      cloudError =
+        err instanceof Error && err.message.trim() !== ""
+          ? err.message.trim()
+          : "error sin detalle";
+      console.warn(
+        `Google Cloud Translation no pudo traducir a ${params.targetLocale}; se usa el modelo de IA. ${cloudError}`,
+      );
+    }
+  }
+
+  try {
+    return await translateWithModel(params);
+  } catch (err) {
+    if (cloudError !== null) {
+      const modelError =
+        err instanceof Error && err.message.trim() !== ""
+          ? err.message.trim()
+          : "sin detalle";
+      throw new Error(
+        `No se ha podido traducir a ${params.targetName} (${params.targetLocale}). ` +
+          `Cloud Translation: ${cloudError} ` +
+          `Modelo de IA (respaldo): ${modelError}`,
+      );
+    }
+    throw err;
+  }
+}
+
+/**
+ * Camino de respaldo: traducción con el modelo de IA.
  *
  * Se le exige JSON estricto y la respuesta se valida aquí: una respuesta
  * truncada o mal formada falla de forma visible en lugar de guardar media
  * traducción.
  */
-export async function translateFields(params: {
+async function translateWithModel(params: {
   fields: TranslateableFields;
   targetLocale: string;
   targetName: string;

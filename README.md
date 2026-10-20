@@ -269,13 +269,30 @@ The convex server has a separate set of environment variables that are accessibl
 
 Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
 
-### AI (document assistant and sheet translations)
+### AI and translations (document assistant and sheet translations)
 
 The assistant tab answers questions about the sheet catalogue, and the admin can
 translate a sheet's title, product and manufacturer from the sheet's edit
-dialog. Both features run on the server (Convex actions) and need **one** of
-these three variables in the deployment environment — the first one that is set
-wins:
+dialog. Both features run on the server (Convex actions).
+
+Sheet translations call **Cloud Translation v2** first (`apis/Google.Cloud.Translation.V2`,
+`POST https://translation.googleapis.com/language/translate/v2`), which takes
+its own key in the deployment environment:
+
+| Variable | What it is | Where to get it |
+| --- | --- | --- |
+| `GOOGLE_TRANSLATE_API_KEY` | Google Cloud API key with Cloud Translation enabled; translates sheets through the v2 route | https://console.cloud.google.com/apis/library/translation.googleapis.com, then Credentials → API keys |
+
+A Google Cloud key is a different product from an AI Studio key, so
+`GOOGLE_API_KEY` alone does not enable the route — if the Google project behind
+your existing key already has Cloud Translation enabled, reuse that same value
+as `GOOGLE_TRANSLATE_API_KEY`. Without the variable, or whenever the API cannot
+serve a request (an unsupported language such as `mnk`, quota, a key without
+the API enabled), translation falls back to the AI model below and logs the
+reason on the server, so no sheet is left untranslated.
+
+The assistant — and that translation fallback — need **one** of these two
+variables in the deployment environment — the first one that is set wins:
 
 | Variable | What it is | Where to get it |
 | --- | --- | --- |

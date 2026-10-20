@@ -306,6 +306,7 @@ describe("pestaña Usuarios", () => {
     expect(screen.getByText("nuevo@example.com")).toBeTruthy();
     // Una cuenta y una invitación pendiente.
     expect(screen.getAllByText("(1)").length).toBe(2);
+    expect(screen.getAllByText("nuevo@example.com").length).toBe(1);
     expect(screen.queryByText(/No se ha podido cargar/)).toBeNull();
   });
 
