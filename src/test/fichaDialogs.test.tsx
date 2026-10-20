@@ -57,6 +57,14 @@ vi.mock("@/lib/supabase", () => ({
   FICHAS_BUCKET: "fichas",
 }));
 
+// El panel de traducciones está apagado en producción (`features.ts`); aquí se
+// enciende para seguir comprobando que sólo se monta —y pide datos— con el
+// diálogo abierto. El interruptor apagado se prueba en `translationsSkipped.test.tsx`.
+vi.mock("@/lib/features", () => ({
+  ASSISTANT_ENABLED: true,
+  TRANSLATIONS_ENABLED: true,
+}));
+
 import { CreateFichaDialog } from "@/components/fichas/CreateFichaDialog";
 import { EditFichaDialog } from "@/components/fichas/EditFichaDialog";
 

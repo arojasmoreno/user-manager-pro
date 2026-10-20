@@ -1,6 +1,7 @@
 import { api } from "@/convex/_generated/api";
 import { useI18n } from "@/i18n";
 import { SOURCE_LOCALE } from "@/i18n/locales";
+import { TRANSLATIONS_ENABLED } from "@/lib/features";
 import { useSafeQuery } from "@/hooks/use-safe-query";
 
 export type FichaFields = {
@@ -27,13 +28,14 @@ export type TranslatedFields = {
  */
 export function useFichaTranslations() {
   const { locale } = useI18n();
-  const isSource = locale === SOURCE_LOCALE;
+  // Con las traducciones apagadas (ver `features.ts`) o en el idioma de origen
+  // no hay nada que traer: se salta la suscripción para no pedir una lista
+  // vacía en cada carga del catálogo.
+  const active = TRANSLATIONS_ENABLED && locale !== SOURCE_LOCALE;
 
-  // En el idioma de origen no hay nada que traer: se salta la suscripción para
-  // no pedir una lista vacía en cada carga del catálogo.
   const { data } = useSafeQuery(
     api.traducciones.listTranslations,
-    isSource ? "skip" : { locale },
+    active ? { locale } : "skip",
   );
 
   const byFicha = new Map<string, TranslatedFields>();
@@ -47,13 +49,15 @@ export function useFichaTranslations() {
   }
 
   return (ficha: FichaFields): TranslatedFields => {
-    const hit = byFicha.get(ficha._id);
+    // Con el interruptor apagado se ignoran hasta las traducciones ya
+    // guardadas: el catálogo se ve íntegramente en su idioma original.
+    const hit = active ? byFicha.get(ficha._id) : undefined;
     if (hit) return hit;
     return {
       title: ficha.title,
       productName: ficha.productName,
       manufacturer: ficha.manufacturer,
-      isFallback: !isSource,
+      isFallback: active,
     };
   };
 }

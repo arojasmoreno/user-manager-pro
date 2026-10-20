@@ -4,6 +4,7 @@ import { CenterPicker } from "@/components/fichas/CenterPicker";
 import { DocumentSource } from "@/components/fichas/DocumentSource";
 import { FichaTranslations } from "@/components/FichaTranslations";
 import { fichaTypeLabel, type FichaType } from "@/lib/fichaTypes";
+import { TRANSLATIONS_ENABLED } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -180,8 +181,11 @@ export function EditFichaDialog({
             />
           </div>
 
-          {/* Solo pide las traducciones cuando el diálogo está abierto. */}
-          <FichaTranslations fichaId={ficha._id} enabled={open} />
+          {/* Se pide las traducciones sólo con el diálogo abierto y sólo si la
+              función está activa (ver `features.ts`). */}
+          {TRANSLATIONS_ENABLED && (
+            <FichaTranslations fichaId={ficha._id} enabled={open} />
+          )}
         </div>
         <DialogFooter>
           <Button

@@ -5,6 +5,7 @@ import {
   assertVisibleFichaType,
   fichaKindValidator,
 } from "./fichaTypes";
+import { mergeFichaTypes, sameFichaTypeName } from "../lib/fichaTypes";
 import type { Id } from "./_generated/dataModel";
 
 // ---------------------------------------------------------------------------
@@ -288,13 +289,16 @@ export const restoreFichaType = mutation({
       throw new Error("Este tipo no estaba retirado.");
     }
 
-    const nameDuplicate = await ctx.db
-      .query("fichaTypes")
-      .filter((q) => q.eq(q.field("hidden"), false))
-      .filter((q) =>
-        q.neq(q.field("_id"), args.typeId),
-      )
-      .first();
+    // Sólo choca si hay otro tipo visible con el mismo nombre (ignorando
+    // acentos y mayúsculas). Antes se bloqueaba ante *cualquier* otro tipo
+    // activo, lo que hacía imposible recuperar uno salvo que no hubiera más.
+    const visible = mergeFichaTypes(await ctx.db.query("fichaTypes").collect());
+    const nameDuplicate = visible.some(
+      (t) =>
+        t.slug !== type.slug &&
+        !t.hidden &&
+        sameFichaTypeName(t.name, type.name),
+    );
     if (nameDuplicate) {
       throw new Error(
         "No se puede recuperar porque ya existe otro tipo activo con el mismo nombre.",

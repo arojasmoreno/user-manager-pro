@@ -38,6 +38,14 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 
+// El interruptor de traducciones está apagado en producción; aquí se enciende
+// para seguir probando el camino de traducción (el apagado tiene su propio
+// test en `translationsSkipped.test.tsx`).
+vi.mock("@/lib/features", () => ({
+  ASSISTANT_ENABLED: true,
+  TRANSLATIONS_ENABLED: true,
+}));
+
 import { CentrosSection } from "@/components/CentrosSection";
 import { FichasSection } from "@/components/FichasSection";
 import { UsuariosSection } from "@/components/UsuariosSection";

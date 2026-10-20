@@ -1,10 +1,11 @@
 import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
 import { useSafeQuery } from "@/hooks/use-safe-query";
-import { useAuth } from "@/hooks/use-auth";
-import { ROLES } from "@/lib/roles";
 import { useFichaTranslations } from "@/hooks/use-ficha-translations";
-import { mergeFichaTypes, fichaTypeLabel, type FichaType } from "@/lib/fichaTypes";
+import {
+  DEFAULT_FICHA_ICON,
+  mergeFichaTypes,
+  type FichaType,
+} from "@/lib/fichaTypes";
 import { fichaIcon, fichaIconTone } from "@/lib/fichaIcons";
 import { ErrorState } from "@/components/ErrorState";
 import { CreateFichaDialog } from "@/components/fichas/CreateFichaDialog";
@@ -26,9 +27,13 @@ function toAdminType(item: AdminTypeWithCount): AdminFichaType {
   };
 }
 
+/**
+ * Listado de fichas del panel de administración.
+ *
+ * Va dentro de `AdminWorkspaceShell`, que ya pone el título y el conmutador de
+ * sub-pestañas: aquí sólo se ocupan las acciones y la rejilla.
+ */
 export function FichasAdminSection() {
-  const { user } = useAuth();
-  const isAdmin = user?.role === ROLES.ADMIN;
   const translateFicha = useFichaTranslations();
 
   const allFichas = useSafeQuery(api.fichas.listAll);
@@ -43,10 +48,9 @@ export function FichasAdminSection() {
     visibleTypes.error ??
     null;
 
-  if (queryError) {
-    return <ErrorState message={queryError.message} />;
-  }
-
+  // Ojo: el `return` de error va después de todos los hooks. Un retorno
+  // condicional antes de los `useMemo`/`useState` cambia el número de hooks
+  // entre renders y React desmonta la pestaña entera con un error.
   const types = useMemo<FichaType[]>(() => {
     const loaded = adminTypesRaw.data;
     if (!loaded) {
@@ -94,16 +98,12 @@ export function FichasAdminSection() {
       .map((id) => centers.data?.find((c) => c._id === id)?.name)
       .filter(Boolean) as string[];
 
+  if (queryError) {
+    return <ErrorState message={queryError.message} />;
+  }
+
   return (
     <div>
-      <div>
-        <p className="kicker">Administración</p>
-        <h2 className="font-display mt-2 text-3xl font-semibold">Fichas</h2>
-        <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-          Gestión completa del catálogo: crea, edita, retira y organiza las fichas del sistema.
-        </p>
-      </div>
-
       <div className="flex flex-wrap gap-2">
         <FichaTypesAdminDialog types={adminTypes} />
         <CreateFichaDialog
@@ -174,24 +174,26 @@ export function FichasAdminSection() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((f) => (
-            <FichaCard
-              key={f._id}
-              ficha={f}
-              types={types}
-              icon={f.kind === "ficha_tecnica" ? "file-text"
-                : f.kind === "ficha_seguridad" ? "shield-alert"
-                : f.kind === "manual_instrucciones" ? "book-open"
-                : f.kind === "instrucciones_trabajo" ? "list-checks"
-                : (allTypes.find((t) => t.slug === f.kind)?.icon ?? "file-text")
-              }
-              iconTone={fichaIconTone(allTypes.find((t) => t.slug === f.kind)?.icon ?? "file-text")}
-              myCenters={centers.data ?? []}
-              centerNames={centerNames}
-              translateFicha={translateFicha}
-              isAdmin={true}
-            />
-          ))}
+          {filtered.map((f) => {
+            // El icono vive en el tipo de la ficha; los tipos de serie traen el
+            // suyo en `allTypes` aunque no haya fila propia.
+            const iconKey =
+              allTypes.find((t) => t.slug === f.kind)?.icon ?? DEFAULT_FICHA_ICON;
+            const Icon = fichaIcon(iconKey);
+            return (
+              <FichaCard
+                key={f._id}
+                ficha={f}
+                types={types}
+                icon={<Icon className="size-4" />}
+                iconTone={fichaIconTone(iconKey)}
+                myCenters={centers.data ?? []}
+                centerNames={centerNames}
+                translateFicha={translateFicha}
+                isAdmin={true}
+              />
+            );
+          })}
         </div>
       )}
     </div>
